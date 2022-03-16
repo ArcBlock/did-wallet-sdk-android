@@ -1,0 +1,346 @@
+syntax = "proto3";
+package ocap;
+
+import "enum.proto";
+import "type.proto";
+import "state.proto";
+import "trace-type.proto";
+
+// Request / Response message definition
+message RequestEmpty {}
+message RequestPaginated {}
+message RequestGetState {
+  string address = 1;
+  repeated string keys = 2;
+  uint64 height = 3;
+}
+
+// send_tx(tx, wallet, token, commit \\ false)
+message RequestSendTx {
+  string tx = 1;
+  WalletInfo wallet = 2 [ deprecated = true ];
+  string token = 3 [ deprecated = true ];
+  bool commit = 4;
+}
+message ResponseSendTx {
+  StatusCode code = 1;
+  string hash = 2;
+}
+
+// get_tx(hash)
+message RequestGetTx { string hash = 1; }
+message ResponseGetTx {
+  StatusCode code = 1;
+  TransactionInfo info = 2;
+}
+
+// get_block(height)
+message RequestGetBlock { uint64 height = 1; }
+message ResponseGetBlock {
+  StatusCode code = 1;
+  BlockInfo block = 2;
+}
+
+message RequestGetBlocks {
+  Page paging = 1;
+  RangeFilter height_filter = 2;
+  bool empty_excluded = 3;
+}
+message ResponseGetBlocks {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated BlockInfoSimple blocks = 3;
+}
+
+// get_account_state(address, key): retrieve the current state from a list of
+// wallet addresses, return the value of the key. If key is omitted, return
+// entire account states
+message ResponseGetAccountState {
+  StatusCode code = 1;
+  AccountState state = 2;
+}
+
+message ResponseGetAssetState {
+  StatusCode code = 1;
+  AssetState state = 2;
+}
+
+// get_forge_state(key): retrieve Forge state by key. If key is omitted, return
+// entire Forge state
+message ResponseGetForgeState {
+  StatusCode code = 1;
+  ForgeState state = 2;
+}
+
+message ResponseGetSwapState {
+  StatusCode code = 1;
+  SwapState state = 2;
+}
+
+message ResponseGetDelegateState {
+  StatusCode code = 1;
+  DelegateState state = 2;
+}
+
+// get_chain_info(): retrieve the current chain information
+message ResponseGetChainInfo {
+  StatusCode code = 1;
+  ChainInfo info = 2;
+}
+
+// get_node_info(): retrieve the current node information
+message ResponseGetNodeInfo {
+  StatusCode code = 1;
+  NodeInfo info = 2;
+}
+
+message ResponseGetUnconfirmedTxs {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  UnconfirmedTxs unconfirmed_txs = 3;
+}
+
+message ResponseGetNetInfo {
+  StatusCode code = 1;
+  NetInfo net_info = 2;
+}
+
+message ResponseGetValidatorsInfo {
+  StatusCode code = 1;
+  ValidatorsInfo validators_info = 2;
+}
+
+// get config
+message RequestGetConfig { bool parsed = 1; }
+message ResponseGetConfig {
+  StatusCode code = 1;
+  string config = 2;
+}
+
+message RequestGetForgeStats {
+  oneof value {
+    ByDay day_info = 1;
+    ByHour date = 2;
+  }
+}
+message ResponseGetForgeStats {
+  StatusCode code = 1;
+  ForgeStats forge_stats = 2;
+}
+
+message RequestListTransactions {
+  Page paging = 1;
+  TimeFilter time_filter = 2;
+  AddressFilter address_filter = 3;
+  TypeFilter type_filter = 4;
+  ValidityFilter validity_filter = 5;
+  FactoryFilter factory_filter = 6;
+  TokenFilter token_filter = 7;
+  AssetFilter asset_filter = 8;
+  AccountFilter account_filter = 9;
+  TxFilter tx_filter = 10;
+  RollupFilter rollup_filter = 11;
+}
+message ResponseListTransactions {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedTransaction transactions = 3;
+}
+
+message RequestListAssets {
+  Page paging = 1;
+  string owner_address = 2;
+  string factory_address = 3;
+  TimeFilter time_filter = 4;
+}
+message ResponseListAssets {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedAssetState assets = 3;
+}
+
+message RequestListTopAccounts {
+  Page paging = 1;
+  string tokenAddress = 2;
+}
+message ResponseListTopAccounts {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedAccountState accounts = 3;
+}
+
+message RequestListAssetTransactions {
+  Page paging = 1;
+  string address = 2;
+}
+message ResponseListAssetTransactions {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedTransaction transactions = 3;
+}
+
+message RequestListBlocks {
+  Page paging = 1;
+  string proposer = 2;
+  TimeFilter time_filter = 3;
+  RangeFilter height_filter = 4;
+  RangeFilter num_txs_filter = 5;
+  RangeFilter num_invalid_txs_filter = 6;
+}
+message ResponseListBlocks {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedBlock blocks = 3;
+}
+
+message RequestListSwap {
+  Page paging = 1;
+  string sender = 2;
+  string receiver = 3;
+  bool available = 4;
+}
+message ResponseListSwap {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated SwapState swap = 3;
+}
+
+message RequestGetSwapStatistics { string address = 1; }
+message ResponseGetSwapStatistics {
+  StatusCode code = 1;
+  SwapStatistics statistics = 2;
+}
+
+message ResponseGetHealthStatus {
+  StatusCode code = 1;
+  HealthStatus health_status = 2;
+}
+
+// token related
+message ResponseGetTokenState {
+  StatusCode code = 1;
+  TokenState state = 2;
+}
+
+message RequestListTokens {
+  Page paging = 1;
+  string issuer_address = 2;
+}
+message ResponseListTokens {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedTokenState tokens = 3;
+}
+
+// asset factory related apis
+message ResponseGetFactoryState {
+  StatusCode code = 1;
+  AssetFactoryState state = 2;
+}
+message RequestListFactories {
+  Page paging = 1;
+  string owner_address = 2;
+  repeated string address_list = 3;
+}
+message ResponseListFactories {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedFactoryState factories = 3;
+}
+
+// account/factory tokens
+message RequestGetAccountTokens {
+  string address = 1; // can be account of factory address
+  string token = 2;
+}
+message ResponseGetAccountTokens {
+  StatusCode code = 1;
+  repeated AccountToken tokens = 3;
+}
+
+// stakes
+message ResponseGetStakeState {
+  StatusCode code = 1;
+  StakeState state = 2;
+}
+message RequestListStakes {
+  Page paging = 1;
+  AddressFilter address_filter = 2;
+  TimeFilter time_filter = 3;
+  AssetFilter asset_filter = 4;
+}
+message ResponseListStakes {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedStakeState stakes = 3;
+}
+
+// Rollup
+message ResponseGetRollupState {
+  StatusCode code = 1;
+  RollupState state = 2;
+}
+
+message RequestListRollups {
+  Page paging = 1;
+  string token_address = 2;
+  string foreign_token_address = 3; // same as erc20_token_address
+}
+message ResponseListRollups {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedRollupState rollups = 3;
+}
+
+message RequestGetRollupBlock {
+  string hash = 1;
+  uint64 height = 2;
+  string rollup_address = 3;
+}
+message ResponseGetRollupBlock {
+  StatusCode code = 1;
+  RollupBlock block = 2;
+}
+
+message RequestListRollupBlocks {
+  Page paging = 1;
+  string rollup_address = 2;
+  string token_address = 3;
+  string proposer = 4;
+  ValidatorFilter validator_filter = 5;
+  TxFilter tx_filter = 6;
+  TimeFilter time_filter = 7;
+}
+message ResponseListRollupBlocks {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedRollupBlock blocks = 3;
+}
+
+message RequestListRollupValidators {
+  Page paging = 1;
+  string rollup_address = 2;
+}
+message ResponseListRollupValidators {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated IndexedRollupValidator validators = 3;
+}
+
+message RequestSearch {
+  Page paging = 1;
+  string keyword = 2;
+}
+message ResponseSearch {
+  StatusCode code = 1;
+  PageInfo page = 2;
+  repeated SearchResult results = 3;
+}
+
+message RequestGetEvidenceState {
+  string hash = 1;
+}
+message ResponseGetEvidenceState {
+  StatusCode code = 1;
+  EvidenceState state = 2;
+}

@@ -1,0 +1,112 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'de.undercouch.download'
+apply plugin: 'maven-publish'
+
+sourceSets {
+  main.java.srcDirs += "${protobuf.generatedFilesBaseDir}/main/javalite"
+}
+
+dependencies {
+  implementation fileTree(dir: 'libs', include: ['*.jar'])
+  testImplementation rootProject.ext.dependencies["junit"]
+  api 'com.google.protobuf:protobuf-java:3.6.1'
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+
+protobuf {
+  protoc {
+    // You still need protoc like in the non-Android case
+    if (osdetector.os == "osx") {
+      artifact = 'com.google.protobuf:protoc:3.19.4:osx-x86_64'
+    } else {
+      artifact = 'com.google.protobuf:protoc:3.19.4'
+    }
+  }
+  plugins {
+    javalite {
+      // The codegen for lite comes as a separate artifact
+      artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0:osx-x86_64'
+    }
+  }
+  generateProtoTasks {
+    all().each { task ->
+      task.builtins {
+        // In most cases you don't need the full Java output
+        // if you use the lite output.
+        remove java
+      }
+      task.plugins {
+        javalite {}
+      }
+    }
+  }
+}
+
+task arcGen(dependsOn: ['generateProto']) {
+}
+
+
+sourceCompatibility = "8"
+targetCompatibility = "8"
+buildscript {
+  ext.kotlin_version = '1.5.30'
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+  }
+}
+compileKotlin {
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+}
+compileTestKotlin {
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+}
+
+def AWS_S3_ACCESSKEY
+def AWS_S3_SECRETKEY
+try {
+  // load local properties
+  Properties properties = new Properties()
+  InputStream inputStream = project.rootProject.file('local.properties').newDataInputStream()
+  properties.load(inputStream)
+
+  // read key - value
+  AWS_S3_ACCESSKEY = properties.getProperty('AWS_S3_ACCESSKEY')
+  AWS_S3_SECRETKEY = properties.getProperty('AWS_S3_SECRETKEY')
+} catch (FileNotFoundException e) {
+  // do nothing
+  print(e)
+}
+
+publishing {
+  repositories {
+    maven {
+      def releaseUrl = "s3://android-docs.arcblock.io.s3.amazonaws.com/release"
+      // def snapshotUrl = "s3://android-docs.arcblock.io.s3.amazonaws.com/snapshot"
+      url releaseUrl
+      credentials(AwsCredentials) {
+        accessKey AWS_S3_ACCESSKEY ? AWS_S3_ACCESSKEY : System.getenv("AWS_S3_ACCESSKEY")
+        secretKey AWS_S3_SECRETKEY ? AWS_S3_SECRETKEY : System.getenv("AWS_S3_SECRETKEY")
+      }
+    }
+  }
+
+  publications {
+    mavenJava(MavenPublication) {
+      groupId 'io.arcblock.walletkit'
+      artifactId 'protocol'
+      version rootProject.version
+      artifact jar
+    }
+  }
+
+}
+

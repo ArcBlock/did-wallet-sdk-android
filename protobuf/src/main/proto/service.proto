@@ -1,0 +1,69 @@
+syntax = "proto3";
+package ocap;
+
+import "tx.proto";
+import "rpc.proto";
+
+service Query {
+  // tx related
+  rpc getTx(stream RequestGetTx) returns (stream ResponseGetTx);
+  rpc getBlock(stream RequestGetBlock) returns (stream ResponseGetBlock);
+  rpc getBlocks(RequestGetBlocks) returns (ResponseGetBlocks);
+  rpc getUnconfirmedTxs(RequestPaginated) returns (ResponseGetUnconfirmedTxs);
+
+  // utility
+  rpc getChainInfo(RequestEmpty) returns (ResponseGetChainInfo);
+  rpc getNodeInfo(RequestEmpty) returns (ResponseGetNodeInfo);
+  rpc getNetInfo(RequestEmpty) returns (ResponseGetNetInfo);
+  rpc getValidatorsInfo(RequestEmpty) returns (ResponseGetValidatorsInfo);
+  rpc getConfig(RequestGetConfig) returns (ResponseGetConfig);
+  rpc getHealthStatus(RequestEmpty) returns (ResponseGetHealthStatus);
+
+  // state related
+  rpc getAccountState(stream RequestGetState) returns (stream ResponseGetAccountState);
+  rpc getAssetState(stream RequestGetState) returns (stream ResponseGetAssetState);
+  rpc getFactoryState(stream RequestGetState) returns (stream ResponseGetFactoryState);
+  rpc getForgeState(RequestGetState) returns (ResponseGetForgeState);
+  rpc getSwapState(stream RequestGetState) returns (stream ResponseGetSwapState);
+  rpc getDelegateState(stream RequestGetState) returns (stream ResponseGetDelegateState);
+  rpc getTokenState(stream RequestGetState) returns (stream ResponseGetTokenState);
+  rpc getEvidenceState(stream RequestGetEvidenceState) returns (stream ResponseGetEvidenceState);
+
+  // For client side
+  rpc getAccountTokens(stream RequestGetAccountTokens) returns (stream ResponseGetAccountTokens);
+
+  // stats
+  rpc getForgeStats(RequestGetForgeStats) returns (ResponseGetForgeStats);
+  rpc getSwapStatistics(RequestGetSwapStatistics) returns (ResponseGetSwapStatistics);
+
+  // indexdb
+  rpc listTransactions(RequestListTransactions) returns (ResponseListTransactions);
+  rpc listAssets(RequestListAssets) returns (ResponseListAssets);
+  rpc listFactories(RequestListFactories) returns (ResponseListFactories);
+  rpc listTopAccounts(RequestListTopAccounts) returns (ResponseListTopAccounts);
+  rpc listAssetTransactions(RequestListAssetTransactions) returns (ResponseListAssetTransactions);
+  rpc listBlocks(RequestListBlocks) returns (ResponseListBlocks);
+  rpc listTokens(RequestListTokens) returns (ResponseListTokens);
+  rpc listSwap(RequestListSwap) returns (ResponseListSwap);
+
+  // Do not worry about this, it will be removed during build phase
+  rpc itxSub(RequestGetConfig) returns (ItxStub);
+
+  // staking
+  rpc getStakeState(stream RequestGetState) returns (stream ResponseGetStakeState);
+  rpc listStakes(RequestListStakes) returns (ResponseListStakes);
+
+  // rollup
+  rpc getRollupState(stream RequestGetState) returns (stream ResponseGetRollupState);
+  rpc listRollups(RequestListRollups) returns (ResponseListRollups);
+  rpc getRollupBlock(stream RequestGetRollupBlock) returns (stream ResponseGetRollupBlock);
+  rpc listRollupBlocks(RequestListRollupBlocks) returns (ResponseListRollupBlocks);
+  rpc listRollupValidators(RequestListRollupValidators) returns (ResponseListRollupValidators);
+
+  // search
+  rpc search(RequestSearch) returns (ResponseSearch);
+}
+
+service Mutation {
+  rpc sendTx(RequestSendTx) returns (ResponseSendTx);
+}

@@ -10,7 +10,14 @@ dependencyResolutionManagement {
   repositories {
     google()
     mavenCentral()
+    maven {
+      allowInsecureProtocol(true)
+      url "http://android-docs.arcblock.io/release"
+    }
+    mavenLocal()
   }
 }
 rootProject.name = "did-wallet-sdk-android"
 include ':app'
+include ':walletkit'
+include ':protobuf'

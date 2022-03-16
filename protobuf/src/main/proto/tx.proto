@@ -1,0 +1,623 @@
+syntax = "proto3";
+package ocap;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "type.proto";
+
+// --------------------- Account Related -------------------------------------
+// User can use this to lock a breached sk
+// Or upgrade his account to a more secure crypto algorithm
+// Or rotate account sk periodically for better security
+message AccountMigrateTx {
+  bytes pk = 1;                              // new public key
+  WalletType type = 2 [ deprecated = true ]; // new wallet type
+  string address = 3;                        // new wallet address
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+message DeclareTx {
+  string moniker = 1;
+  string issuer = 2;
+
+  // ocap won't update data into state if app is interested in this tx.
+  google.protobuf.Any data = 15;
+}
+message DelegateTx {
+  string address = 1; // address of the delegation between sender and receiver
+  string to = 2;      // delegatee's address
+  repeated DelegateOp ops = 3; // a list of operations permitted, ops will be merged when multiple delegation is done on same address
+
+  google.protobuf.Any data = 15;
+}
+
+// if rules are empty, signature for this type_url is entirely delegated
+// otherwise rules are checked one by one, relationship between rules is AND.
+// a rule is an expression defined in rule_parser
+// (github.com/arcblock/rule-parser) one can setup
+message DelegateOp {
+  string type_url = 1;
+  repeated string rules = 2;
+}
+message RevokeDelegateTx {
+  string address = 1; // address of the delegation between sender and receiver
+  string to = 2;      // delegatee's address
+  repeated string type_urls = 3;
+
+  google.protobuf.Any data = 15;
+}
+
+// --------------------- Governance Related ------------------------------------
+message UpgradeNodeTx {
+  // the height node will be stopped at.
+  uint64 height = 1;
+  // the version next release is expected
+  string version = 2;
+  // override the existing upgrade settings if there's already one. Use it with
+  // cautious.
+  bool override = 3;
+}
+
+// --------------------- Trade Related -------------------------------------
+message ExchangeInfo {
+  BigUint value = 1;
+  repeated string assets = 2;
+}
+message ExchangeInfoV2 {
+  BigUint value = 1;
+  repeated string assets = 2;
+  repeated TokenInput tokens = 3;
+}
+
+// we could support these cases (and vise versa):
+// 1. sender fungible token <-> receiver one or more assets
+// 2. sender fungible token + asset <-> receiver one or more assets
+// 3. sender one or more assets <-> receiver one or more assets
+message ExchangeTx {
+  string to = 1;
+  ExchangeInfo sender = 2;
+  ExchangeInfo receiver = 3;
+  google.protobuf.Timestamp expired_at = 4;
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+message ExchangeV2Tx {
+  string to = 1;
+  ExchangeInfoV2 sender = 2;
+  ExchangeInfoV2 receiver = 3;
+  google.protobuf.Timestamp expired_at = 4;
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+message TransferTx {
+  string to = 1;
+  BigUint value = 2;
+  repeated string assets = 3;
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+message TransferV2Tx {
+  string to = 1;
+  BigUint value = 2;
+  repeated string assets = 3;
+  repeated TokenInput tokens = 4;
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+message TransferV3Tx {
+  repeated TransactionInput inputs = 1;
+  repeated TransactionInput outputs = 2;
+
+  // chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+
+// --------------------- Token Related -------------------------------------
+message CreateTokenTx {
+  string name = 1;
+  string description = 2;
+  string symbol = 3;
+  string unit = 4;
+  int32 decimal = 5;
+  string icon = 6;
+  string total_supply = 7;
+  string address = 8;
+
+  // For tokens that supports rollup, the initial supply should be very small
+  // Initial supply should be less than total supply
+  string initial_supply = 9;
+
+  // It's recommended that you set this, so your token will possibly have a price in fiat currency.
+  // string erc20_contract_address = 15; // deprecated
+  ForeignToken foreign_token = 16;
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 20;
+}
+
+// --------------------- Asset Related -------------------------------------
+message AssetFactoryInput {
+  // how much primary token required to mint
+  // usually used to set a price for the NFT
+  string value = 1;
+
+  // how much secondary tokens required to mint asset from this factory
+  // usually used to set a price for the NFT
+  repeated TokenInput tokens = 2;
+
+  // which asset(s) required to mint new nft
+  // can be either a list of specific assets or factories
+  // if specific assets are provided, we should ensure they are not consumed when creating the factory
+  // and then mark the input assets as consumed when minting success, in such case, this factory usage is limited
+  // if a factory is provided, we should ensure each input assets is not consumed and all minted from that factory on minting
+  // in such case, we can pipe factory to build very complex business logic
+  // optional, default to empty array
+  repeated string assets = 3;
+
+  // variables that will be inserted into the output
+  // limitation: all variables should be strings
+  repeated VariableInput variables = 4;
+}
+// Granted issuers can help users to mint new assets with predefined costs
+message AcquireAssetV2Tx {
+  // the address of the asset factory
+  string factory = 1;
+
+  // address of the minted asset
+  // must be calculated on client side to make things deterministic
+  string address = 2;
+
+  // assets to consume to mint new asset
+  // should be a list of specific asset (not factory)
+  // each asset will be checked for consumption before minting
+  // and marked as consumed when minting success
+  repeated string assets = 3;
+
+  // template variables, should all be strings
+  // this list should contain all required variables to populate the factory output template
+  repeated VariableInput variables = 4;
+
+  // issuer info to mint the asset
+  // TODO: enforce issuer in acquire/mint asset protocol
+  AssetIssuer issuer = 5;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 15;
+}
+message AcquireAssetV3Tx {
+  // the address of the asset factory
+  string factory = 1;
+
+  // address of the minted asset
+  // must be calculated on client side to make things deterministic
+  string address = 2;
+
+  // Who pays for this acquire
+  repeated TransactionInput inputs = 3;
+
+  // Who gets the minted asset
+  string owner = 4;
+
+  // template variables, should all be strings
+  // this list should contain all required variables to populate the factory output template
+  repeated VariableInput variables = 5;
+
+  // issuer info to mint the asset
+  // TODO: enforce issuer in acquire/mint asset protocol
+  AssetIssuer issuer = 6;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 15;
+}
+// The factory owner can mint new assets without any cost
+message MintAssetTx {
+  // the address of the asset factory
+  string factory = 1;
+
+  // address of the minted asset
+  // must be calculated on client side to make things deterministic
+  string address = 2;
+
+  // assets to consume to mint new asset
+  // should be a list of specific asset (not factory)
+  // each asset will be checked for consumption before minting
+  // and marked as consumed when minting success
+  repeated string assets = 3;
+
+  // template variables
+  repeated VariableInput variables = 4;
+
+  // owner of the minted asset
+  string owner = 5;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 15;
+}
+message CreateAssetTx {
+  string moniker = 1;
+  // ocap won't update data into state if app is interested in this tx.
+  google.protobuf.Any data = 2;
+  bool readonly = 3;
+  bool transferrable = 4;
+  // ttl for the asset after first consumption. 0 means unlimited.
+  uint32 ttl = 5;
+  string parent = 6;
+  string address = 7;
+  string issuer = 8;
+}
+message UpdateAssetTx {
+  string address = 1;
+  string moniker = 2;
+
+  // ocap won't update data into state if app is interested in this tx.
+  google.protobuf.Any data = 15;
+}
+// An asset factory is readonly by default
+// Thus any change to the factory result a new factory
+message CreateFactoryTx {
+  string name = 1;
+  string description = 2;
+
+  // If the input requires some tokens, how are they settled?
+  // Currently we only support instant settlement
+  // In future we may consider periodic settlement
+  string settlement = 3;
+
+  // total assets can mint from this factory, set to 0 to allow infinite minting
+  uint32 limit = 4;
+
+  // who can mint assets from this factory
+  // default to empty, which only the factory owner can mint assets from
+  // If set to ["*"], then anyone can mint from this factory
+  repeated string trusted_issuers = 5;
+
+  // input params to mint new asset, can be any combination of tokens + assets
+  AssetFactoryInput input = 6;
+
+  // the template that asset factory will use to generate the asset
+  // the output must be the same structure as `CreateAssetTx`
+  // from which we can derive the asset address from
+  // the output object can contain template variable placeholders to populate
+  CreateAssetTx output = 7;
+
+  // hooks called when new assets minted
+  repeated AssetFactoryHook hooks = 8;
+
+  // address for the factory
+  string address = 9;
+
+  // how the nft factory will look like
+  AssetDisplay display = 10;
+
+  // extra content that can populate into the output object when minting
+  google.protobuf.Any data = 15;
+}
+
+// --------------------- Staking Related -------------------------------------
+// User can append assets to the same stake
+message StakeTx {
+  string address = 1;
+
+  // used to create stake address = createDid(tx.sender, itx.to)
+  string receiver = 2;
+
+  // Can stake any combination of tokens + assets
+  repeated TransactionInput inputs = 3;
+
+  // Lock the stake on creation, does not have any effect when append to existing stake
+  bool locked = 4;
+
+  // Human readable messge help to identify the purpose of the stake
+  string message = 5;
+
+  // Period to wait before revoked stake can be claimed, in seconds
+  uint32 revoke_waiting_period = 6;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 50;
+}
+// Withdraw assets from the stake
+message RevokeStakeTx {
+  string address = 1;
+
+  // Can unstake any combination of tokens + assets
+  // Can unstake part of it or all of it
+  repeated TransactionInput outputs = 2;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 50;
+}
+// Claim revoked stake
+message ClaimStakeTx {
+  // Which stake to claim from
+  string address = 1;
+
+  // Revoke transaction
+  Evidence evidence = 2;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 50;
+}
+
+// --------------------- Rollup Related -------------------------------------
+message CreateRollupTx {
+  string address = 1;
+
+  // can be token or factory adddress
+  string token_address = 2;
+
+  // string erc20_token_address = 3; // deprecated
+
+  string contract_address = 4;
+
+  // Immutable
+  repeated RollupValidator seed_validators = 5;
+
+  // Mutable
+  string min_stake_amount = 6;
+  string max_stake_amount = 7;
+
+  // Mutable
+  uint32 min_signer_count = 8; // default to 1
+  uint32 max_signer_count = 9;
+
+  // Mutable
+  uint32 min_block_size = 10; // default to 1
+  uint32 max_block_size = 11; // default to 1000, ideally cost < income
+
+  // Mutable
+  uint32 min_block_interval = 12;
+  uint32 min_block_confirmation = 13;
+
+  // Immutable
+  string foreign_chain_type = 14; // type of the foreign chain, possibly "eth", "bsc", "matic"
+  string foreign_chain_id = 15;   // chain id of the chain. Could be testnet or mainnet.
+
+  // Mutable
+  uint32 deposit_fee_rate = 16;
+  uint32 withdraw_fee_rate = 17;
+  uint32 proposer_fee_share = 18;
+
+  // Mutable
+  string min_deposit_amount = 19;
+  string min_withdraw_amount = 20;
+
+  // Added since v1.13.45
+  string max_deposit_amount = 21;
+  string max_withdraw_amount = 22;
+  string min_deposit_fee = 23;
+  string max_deposit_fee = 24;
+  string min_withdraw_fee = 25;
+  string max_withdraw_fee = 26;
+  bool paused = 27;
+
+  // Added since v1.13.53
+  uint32 leave_waiting_period = 28;
+
+  // Added since v1.13.57
+  uint32 publisher_fee_share = 29;
+
+  // Added since v1.13.61
+  uint32 publish_waiting_period = 30;
+  uint32 publish_slash_rate = 31;
+
+  google.protobuf.Any data = 50;
+}
+// Should be a multi-signed transaction
+message UpdateRollupTx {
+  string min_stake_amount = 1;
+  string max_stake_amount = 2;
+
+  uint32 min_signer_count = 3; // default to 1
+  uint32 max_signer_count = 4;
+
+  uint32 min_block_size = 5; // default to 1
+  uint32 max_block_size = 6; // default to 1000, ideally cost < income
+
+  uint32 min_block_interval = 7;
+  uint32 min_block_confirmation = 8;
+
+  uint32 deposit_fee_rate = 9;
+  uint32 withdraw_fee_rate = 10;
+  uint32 proposer_fee_share = 11;
+
+  string min_deposit_amount = 12;
+  string min_withdraw_amount = 13;
+
+  // Added since v1.13.45
+  string max_deposit_amount = 14;
+  string max_withdraw_amount = 15;
+  string min_deposit_fee = 16;
+  string max_deposit_fee = 17;
+  string min_withdraw_fee = 18;
+  string max_withdraw_fee = 19;
+
+  // Added since v1.13.57
+  uint32 publisher_fee_share = 20;
+
+  // Added since v1.13.61
+  uint32 leave_waiting_period = 21;
+  uint32 publish_waiting_period = 22;
+  uint32 publish_slash_rate = 23;
+
+  string rollup = 40;
+  google.protobuf.Any data = 50;
+}
+message JoinRollupTx {
+  // Other nodes must sign for this join: by checking availability of the node endpoint
+  // We should carefully design an challenge workflow for the new node
+  // Only seed validators can join without multi-sign
+  // New node can only join when it meets minimum staking requirements
+  string rollup = 1;
+
+  // If the validator endpoint changed, it should leave and join again
+  // The node does not have to make any changes to the stake
+  string endpoint = 2;
+
+  // The foreign chain tx hash that the node has added itsself from the contract
+  // The node must pass a group of challenges before actually join the rollup
+  Evidence evidence = 3;
+
+  // Signature from other nodes that verified the evidence
+  // The current validator should not be included
+  repeated Multisig signatures = 4;
+
+  google.protobuf.Any data = 50;
+}
+message LeaveRollupTx {
+  // The staking can only be revoked when the node is not in the validator list anymore
+  string rollup = 1;
+
+  // The foreign chain tx hash that the node has removed itsself from the contract
+  Evidence evidence = 2;
+
+  // Signature from other nodes that verified the evidence
+  // The current validator should not be included
+  repeated Multisig signatures = 3;
+
+  google.protobuf.Any data = 50;
+}
+// Most fields are the same as RollupBlockState
+message CreateRollupBlockTx {
+  string hash = 1;
+  uint64 height = 2;
+  string merkle_root = 3;
+  string previous_hash = 4;
+
+  string txs_hash = 5;
+
+  repeated string txs = 6;
+
+  string proposer = 7;
+
+  repeated Multisig signatures = 8;
+
+  // Deprecated
+  // string checkpoint = 9; // must be valid iso date string
+
+  // the rollup chainId
+  string rollup = 10;
+
+  // Added since v1.13.61
+  string min_reward = 11;
+
+  google.protobuf.Any data = 50;
+}
+message ClaimBlockRewardTx {
+  // rollup and block hash
+  string rollup = 1;
+  uint64 block_height = 2;
+  string block_hash = 3;
+
+  // The foreign chain tx evidence of block publishing
+  Evidence evidence = 4;
+
+  // Who published the block to the contract, can get 70% of the block fee
+  // All validators will get 30% of the block fee
+  string publisher = 5;
+
+  google.protobuf.Any data = 50;
+}
+message PauseRollupTx {
+  string rollup = 1;
+  google.protobuf.Any data = 10;
+}
+message ResumeRollupTx {
+  string rollup = 1;
+  google.protobuf.Any data = 10;
+}
+message MigrateRollupContractTx {
+  string rollup = 1;
+  string to = 2;
+  google.protobuf.Any data = 10;
+}
+message MigrateRollupTokenTx {
+  string rollup = 1;
+  string from = 2;       // from which contract
+  string to = 3;         // to which contract, must points to latest contract address
+  TokenInput token = 4;           // token address and amount to migrate
+  google.protobuf.Any data = 10;
+}
+message DepositTokenV2Tx {
+  // Should be a multi-signed transaction
+  // Submited by user, signed by rollup validators
+  TokenInput token = 1;           // token address and amount to deposit
+  string to = 2;                  // address to deposit token to, should be same as tx.from
+  string proposer = 3;            // the rollup validator that pays for this deposit, other validators exists in tx.signatures
+  Evidence evidence = 4;          // the evidence of the original transaction
+  string rollup = 5;              // the rollup chainId to deposit to
+
+  // Added since v1.13.61
+  string actual_fee = 7;       // the actual_fee charged for this tx
+
+  google.protobuf.Any data = 15;
+}
+message WithdrawTokenV2Tx {
+  TokenInput token = 1;           // token address and amount to withdraw
+  string to = 2;                  // foreign address to withdraw token to, should by same as tx.from
+  string rollup = 3;              // the rollup chainId to withdraw from
+
+  // Added since v1.13.61
+  string proposer = 5;            // the rollup validator that proposed the max-reward
+  string max_fee = 6;             // the maximum fee amount that user is willing to pay for this tx to be committed
+  string actual_fee = 7;          // the actual_fee charged for this tx
+
+  // the chain won't touch this field. Only the dapp shall handle it.
+  google.protobuf.Any data = 15;
+}
+
+// All valid tx protocols should be listed here
+message ItxStub {
+  oneof value {
+    // Accounts
+    DeclareTx declare = 1;
+    DelegateTx delegate = 2;
+    RevokeDelegateTx revoke_delegate = 3;
+    AccountMigrateTx account_migrate = 4;
+
+    // Assets
+    CreateAssetTx create_asset = 5;
+    UpdateAssetTx update_asset = 6;
+
+    // Trade
+    ExchangeTx exchange = 10;
+    ExchangeV2Tx exchange_v2 = 12;
+    TransferTx transfer = 13;
+    TransferV2Tx transfer_v2 = 14;
+    TransferV3Tx transfer_v3 = 15;
+
+    // Tokens
+    CreateTokenTx create_token = 20;
+    DepositTokenV2Tx deposit_token = 21;
+    WithdrawTokenV2Tx withdraw_token = 22;
+
+    // NFTs
+    CreateFactoryTx create_factory = 30;
+    AcquireAssetV2Tx acquire_asset_v2 = 31;
+    AcquireAssetV3Tx acquire_asset_v3 = 32;
+    MintAssetTx mint_asset = 33;
+
+    // Governance
+    StakeTx stake = 40;
+    RevokeStakeTx revoke_stake = 41;
+    ClaimStakeTx claim_stake = 42;
+    UpgradeNodeTx upgrade_node = 49;
+
+    // Rollup
+    CreateRollupTx create_rollup = 50;
+    UpdateRollupTx update_rollup = 51;
+    JoinRollupTx join_rollup = 52;
+    LeaveRollupTx leave_rollup = 53;
+    CreateRollupBlockTx create_rollup_block = 54;
+    ClaimBlockRewardTx claim_block_reward = 55;
+    PauseRollupTx pause_rollup = 56;
+    ResumeRollupTx resume_rollup = 57;
+    MigrateRollupContractTx migrate_rollup_contract = 58;
+    MigrateRollupTokenTx migrate_rollup_token = 59;
+  }
+}
