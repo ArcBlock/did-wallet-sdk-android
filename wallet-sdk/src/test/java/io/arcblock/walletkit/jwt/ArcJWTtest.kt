@@ -1,11 +1,7 @@
 package io.arcblock.walletkit.jwt
 
 import com.google.common.io.BaseEncoding
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.arcblock.walletkit.did.IdGenerator
 import io.arcblock.walletkit.did.KeyType.ED25519
-import io.arcblock.walletkit.did.toHexString
 import io.arcblock.walletkit.utils.Base58Btc
 import org.junit.Test
 

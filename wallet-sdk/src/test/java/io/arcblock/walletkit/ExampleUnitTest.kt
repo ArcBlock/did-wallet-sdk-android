@@ -1,13 +1,11 @@
 package io.arcblock.walletkit
 
-import io.arcblock.walletkit.jwt.ArcJWT
 import org.junit.Test
 
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.TimeZone
 
 import org.junit.Assert.assertEquals
 

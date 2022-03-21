@@ -1,6 +1,5 @@
 package io.arcblock.walletkit.did
 
-import org.junit.Assert
 import org.junit.Test
 
 import org.junit.Assert.*

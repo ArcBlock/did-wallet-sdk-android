@@ -35,7 +35,7 @@ class KeccakTest {
     )
 
     inputs.forEachIndexed { index, input ->
-      Assert.assertEquals(hash224[index], BaseEncoding.base16().encode(ArcKeccakf1600Hasher.sha224(input.toByteArray(),1)))
+      Assert.assertEquals(hash224[index], BaseEncoding.base16().encode(ArcKeccakf1600Hasher.sha224(input.toByteArray(), 1)))
       Assert.assertEquals(hash256[index], BaseEncoding.base16().encode(ArcKeccakf1600Hasher.sha256(input.toByteArray(), 1)))
       Assert.assertEquals(hash384[index], BaseEncoding.base16().encode(ArcKeccakf1600Hasher.sha384(input.toByteArray(), 1)))
       Assert.assertEquals(hash512[index], BaseEncoding.base16().encode(ArcKeccakf1600Hasher.sha512(input.toByteArray(), 1)))

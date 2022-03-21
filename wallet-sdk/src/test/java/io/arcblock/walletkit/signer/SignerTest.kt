@@ -3,6 +3,9 @@ package io.arcblock.walletkit.signer
 import com.google.common.io.BaseEncoding
 import io.arcblock.walletkit.bip44.Bip44Utils
 import io.arcblock.walletkit.did.*
+import io.arcblock.walletkit.did.KeyType.ED25519
+import io.arcblock.walletkit.did.KeyType.ETHEREUM
+import io.arcblock.walletkit.did.KeyType.SECP256K1
 import io.arcblock.walletkit.jwt.ArcJWT
 import io.arcblock.walletkit.utils.*
 import org.junit.Assert
@@ -112,7 +115,7 @@ class SignerTest {
     var sig =
       "z31C4D3hfpLPUeEi6eXyZq6uxTXusD74doKA9wLHPGrrw19vxsm2FsxPw9XDtZBTzdfuaVDNtY5T68LNtxGXNV3qn".decodeB58()
     val pk = "zBQbgFnZsUEJeAfjbHNMEiRjCAxjbJu7hJtzNcaFZNX5f".decodeB58()
-    assert(Signer.verify(KeyType.ED25519, d, pk, sig))
+    assert(Signer.verify(ED25519, d, pk, sig))
   }
 
   @Test
@@ -122,7 +125,7 @@ class SignerTest {
     val sig =
       "K9Syv2CrhcZ2cdizfXggDMnUkP6BxE2lMfP2ORvE5wZkPeHKsdbNhf6WaAe22eBqIODlxUp1a9WwxFYdeZ7kAA".decodeB64Url()
     val pk = "zE6zBsjDMmYyFhHMegsLFk6WXRqhS4beoj8aa78uEC1te".decodeB58()
-    assert(Signer.verify(KeyType.ED25519, pk = pk, content = content, signature = sig))
+    assert(Signer.verify(ED25519, pk = pk, content = content, signature = sig))
 
     assert(
       ArcJWT.verifyJWT(
@@ -163,14 +166,14 @@ class SignerTest {
 
     val sigFromSk = BaseEncoding.base16().encode(
       Signer.sign(
-        KeyType.ETHEREUM,
+        ETHEREUM,
         messageUtf8.toByteArray(),
         BaseEncoding.base16().decode(sk)
       )
     )
     Assert.assertEquals(signatureUtf8, sigFromSk)
     val result = Signer.verify(
-      KeyType.ETHEREUM,
+      ETHEREUM,
       messageUtf8.toByteArray(),
       BaseEncoding.base16().decode(pk),
       BaseEncoding.base16().decode(signatureUtf8)
@@ -186,14 +189,14 @@ class SignerTest {
     // pk - 64
     val pk =
       "7D6F080329CAB372A8008B19B32D0E5D2138B6E46161EECFDC439D9A2BDBE6EF386017FE07A55D9AA501F0A525AD02AF14E0C09EF8375404B5B69A7C70A99972".decodeB16()
-    val sig = Signer.sign(KeyType.ETHEREUM, messageUtf8.toByteArray(), sk)
-    assert(Signer.verify(KeyType.ETHEREUM, messageUtf8.toByteArray(), pk, sig))
+    val sig = Signer.sign(ETHEREUM, messageUtf8.toByteArray(), sk)
+    assert(Signer.verify(ETHEREUM, messageUtf8.toByteArray(), pk, sig))
 
     val sk2 = "6235C0D56B8E979640CC96629CB3E5B8C4D25C42E13FC92097F1AEE2FB118606".decodeB16()
     val pk2 =
       "00FA17A7CE0401F031CBD87FA824FF3FD6B63034951DDBD2D1536AEC3BF7382A3D328993ED68C9B5C5D2858C0558330711E0CCBCCAA318F8E1E494DCF397905D13".decodeB16()
-    val sig2 = Signer.sign(KeyType.ETHEREUM, messageUtf8.toByteArray(), sk2)
-    assert(Signer.verify(KeyType.ETHEREUM, messageUtf8.toByteArray(), pk2, sig2))
+    val sig2 = Signer.sign(ETHEREUM, messageUtf8.toByteArray(), sk2)
+    assert(Signer.verify(ETHEREUM, messageUtf8.toByteArray(), pk2, sig2))
   }
 
   @Test
@@ -201,7 +204,7 @@ class SignerTest {
     val msg = "65794A68624763694F694A4656456846556B565654534973496E523563434936496B705856434A392E65794A6C654841694F6949784E6A45314E5455794E7A59354969776961574630496A6F694D5459784E5455314D6A51324F534973496D6C7A63794936496A42344D7A6B344E7A56474D544D315247526A59544A6C4D54686C4D3251784E6A6335596B4E684E6A41314F5445354F4749774D4746424D694973496D35695A694936496A45324D5455314E5449304E546B694C434A795A5846315A584E305A5752446247467062584D694F6C74644C434A7A5A584E7A61573975535751694F6949696651".decodeB16()
     val pk = "z3vgraBB9AfCjCexFWY8oztu6rdu3Wa9gpVQxJVzoLLo35FZaD9RkBcSp958iqxpFugiVcWeFe6Jf9U8p8GAh3gpT".decodeB58()
     val sig = "490D2A5EB22C744877042DFC9159B60A2E30AC0CEE22E5787C653A05F63C05A74CA2A1DD8313EA1021FBC58BCECEE5D0D8754CBD9CD8235282BDDF07A8156F08".decodeB16()
-    val result = Signer.verify(KeyType.ETHEREUM, msg, pk, sig)
+    val result = Signer.verify(ETHEREUM, msg, pk, sig)
     println("result:$result")
   }
 
@@ -214,7 +217,7 @@ class SignerTest {
       "E4852B7091317E3622068E62A5127D1FB0D4AE2FC50213295E10652D2F0ABFC7"
 
     val result = Signer.verify(
-      KeyType.ED25519,
+      ED25519,
       messageUtf8.toByteArray(),
       BaseEncoding.base16().decode(pk),
       BaseEncoding.base16().decode(signatureUtf8)
@@ -231,7 +234,7 @@ class SignerTest {
     val pk =
       "0450863AD64A87AE8A2FE83C1AF1A8403CB53F53E486D8511DAD8A04887E5B23522CD470243453A299FA9E77237716103ABC11A1DF38855ED6F2EE187E9C582BA6"
     val result = Signer.verify(
-      KeyType.SECP256K1,
+      SECP256K1,
       messageUtf8.toByteArray(),
       BaseEncoding.base16().decode(pk),
       BaseEncoding.base16().decode(signatureUtf8)

@@ -1,19 +1,14 @@
 package io.arcblock.walletkit.bip44
 
-import io.arcblock.walletkit.bip44.Bip44Utils.ETH_JAXX_TYPE
-import io.arcblock.walletkit.did.DidKeyPair
 import io.arcblock.walletkit.did.DidType
 import io.arcblock.walletkit.did.IdGenerator
 import io.arcblock.walletkit.did.KeyType
 import io.arcblock.walletkit.utils.encodeB64
 import io.arcblock.walletkit.utils.encodeB64Url
-import org.bitcoinj.core.Utils
 import org.bitcoinj.crypto.MnemonicCode
 import org.junit.Assert
 import org.junit.Test
 import org.web3j.crypto.Keys
-import org.web3j.utils.Numeric
-import org.web3j.utils.Strings.join
 
 /**
  * Author       :paperhuang

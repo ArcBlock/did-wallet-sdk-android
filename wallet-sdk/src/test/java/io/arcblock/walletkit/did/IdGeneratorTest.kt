@@ -2,11 +2,16 @@ package io.arcblock.walletkit.did
 
 import com.google.common.io.BaseEncoding
 import io.arcblock.walletkit.bip44.Bip44Utils
+import io.arcblock.walletkit.did.EncodingType.BASE16
+import io.arcblock.walletkit.did.EncodingType.BASE58
 import io.arcblock.walletkit.did.HashType.KECCAK
+import io.arcblock.walletkit.did.HashType.SHA2
 import io.arcblock.walletkit.did.HashType.SHA3
 import io.arcblock.walletkit.did.KeyType.*
 import io.arcblock.walletkit.did.RoleType.ACCOUNT
 import io.arcblock.walletkit.did.RoleType.APPLICATION
+import io.arcblock.walletkit.did.RoleType.DELEGATE
+import io.arcblock.walletkit.did.RoleType.SWAP
 import io.arcblock.walletkit.hash.Hasher
 import io.arcblock.walletkit.utils.*
 import org.junit.Assert
@@ -48,49 +53,49 @@ class IdGeneratorTest {
     Assert.assertEquals(RoleType.ACCOUNT, type1.roleType)
     Assert.assertEquals(KeyType.ETHEREUM, type1.keyType)
     Assert.assertEquals(HashType.KECCAK, type1.hashType)
-    Assert.assertEquals(EncodingType.BASE16, type1.encodingType)
+    Assert.assertEquals(BASE16, type1.encodingType)
 
     // get did type from empty string
     val type2 = DidType.getDidTypeByAddress("")
     Assert.assertEquals(RoleType.ACCOUNT, type2.roleType)
     Assert.assertEquals(KeyType.ED25519, type2.keyType)
     Assert.assertEquals(HashType.SHA3, type2.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type2.encodingType)
+    Assert.assertEquals(BASE58, type2.encodingType)
 
     // get did type from a error string
     val type3 = DidType.getDidTypeByAddress("123")
     Assert.assertEquals(RoleType.ACCOUNT, type3.roleType)
     Assert.assertEquals(KeyType.ED25519, type3.keyType)
     Assert.assertEquals(HashType.SHA3, type3.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type3.encodingType)
+    Assert.assertEquals(BASE58, type3.encodingType)
 
     // get did type from a did address - ed25519
     val type4 = DidType.getDidTypeByAddress("z1n9fgDEKMWdnEJ46Uftg732hVvVx3gs9yu")
     Assert.assertEquals(RoleType.ACCOUNT, type4.roleType)
     Assert.assertEquals(KeyType.ED25519, type4.keyType)
     Assert.assertEquals(HashType.SHA3, type4.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type4.encodingType)
+    Assert.assertEquals(BASE58, type4.encodingType)
 
     // get did type from a did address - SECP256K1
     val type5 = DidType.getDidTypeByAddress("z1Ee1H8g248HqroacmEnZzMYgbhjz1Z2WSvv")
     Assert.assertEquals(RoleType.ACCOUNT, type5.roleType)
     Assert.assertEquals(KeyType.SECP256K1, type5.keyType)
     Assert.assertEquals(HashType.SHA3, type5.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type5.encodingType)
+    Assert.assertEquals(BASE58, type5.encodingType)
 
     // get did type from a did address - swap
     val type6 = DidType.getDidTypeByAddress("z2UHsX5Gzj24oT81Kis6fekS1xTRvdejNqM88")
-    Assert.assertEquals(RoleType.SWAP, type6.roleType)
+    Assert.assertEquals(SWAP, type6.roleType)
     Assert.assertEquals(KeyType.ED25519, type6.keyType)
-    Assert.assertEquals(HashType.SHA2, type6.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type6.encodingType)
+    Assert.assertEquals(SHA2, type6.hashType)
+    Assert.assertEquals(BASE58, type6.encodingType)
 
     // get did type from a did address - DELEGATE
     val type7 = DidType.getDidTypeByAddress("z2bN1iucQC2obei6B2cJrtp7d9zbVCKoceKEo")
-    Assert.assertEquals(RoleType.DELEGATE, type7.roleType)
+    Assert.assertEquals(DELEGATE, type7.roleType)
     Assert.assertEquals(KeyType.ED25519, type7.keyType)
     Assert.assertEquals(HashType.SHA3, type7.hashType)
-    Assert.assertEquals(EncodingType.BASE58, type7.encodingType)
+    Assert.assertEquals(BASE58, type7.encodingType)
   }
 
   @Test
@@ -144,7 +149,7 @@ class IdGeneratorTest {
       IdGenerator.sk2did(
         BaseEncoding.base16()
           .decode(sk),
-        DidType(ACCOUNT, SECP256K1, SHA3, EncodingType.BASE58)
+        DidType(ACCOUNT, SECP256K1, SHA3, BASE58)
       )
         .address()
     )
@@ -154,7 +159,7 @@ class IdGeneratorTest {
       IdGenerator.sk2did(
         BaseEncoding.base16()
           .decode(sk),
-        DidType(ACCOUNT, SECP256K1, SHA3, EncodingType.BASE16)
+        DidType(ACCOUNT, SECP256K1, SHA3, BASE16)
       )
         .address()
     )
@@ -165,7 +170,7 @@ class IdGeneratorTest {
         IdGenerator.sk2pk(
           SECP256K1, BaseEncoding.base16()
             .decode("26954E19E8781905E2CF91A18AE4F36A954C142176EE1BC27C2635520C49BC55")
-        ), DidType(ACCOUNT, SECP256K1, SHA3, EncodingType.BASE58)
+        ), DidType(ACCOUNT, SECP256K1, SHA3, BASE58)
       )
         .address()
     )
