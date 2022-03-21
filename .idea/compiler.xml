@@ -3,7 +3,7 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel target="1.8">
       <module name="did-wallet-sdk-android.app" target="11" />
-      <module name="did-wallet-sdk-android.walletkit" target="11" />
+      <module name="did-wallet-sdk-android.wallet-sdk" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

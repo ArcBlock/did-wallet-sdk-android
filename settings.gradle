@@ -19,5 +19,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "did-wallet-sdk-android"
 include ':app'
-include ':walletkit'
+include ':wallet-sdk'
 include ':protobuf'

@@ -1,12 +1,11 @@
 plugins {
-  id 'kotlin'
-  id 'java-library'
-  id 'com.google.protobuf'
+  id 'com.android.library'
+  id 'org.jetbrains.kotlin.android'
   id 'maven-publish'
   id 'signing'
 }
 def getArtificatId = { ->
-  return "sdk-protobuf"
+  return "wallet-sdk"
 }
 def getVersionName = { ->
   return System.getenv('TAG_NAME') ?: "1.0.0"
@@ -20,70 +19,51 @@ def repositoryUsername = project.findProperty("nexus.username") ?: hasProperty('
 
 def repositoryPassword = project.findProperty("nexus.pw") ?: hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
 
-
-
-sourceSets {
-  main.java.srcDirs += "${protobuf.generatedFilesBaseDir}/main/javalite"
+android {
+  compileSdkVersion rootProject.ext.android["compileSdkVersion"]
+  defaultConfig {
+    minSdkVersion rootProject.ext.android["minSdkVersion"]
+    targetSdkVersion rootProject.ext.android["targetSdkVersion"]
+    versionCode 1
+    versionName "1.0"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+  }
+  buildFeatures {
+    viewBinding true
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    }
+  }
+  packagingOptions {
+    exclude 'META-INF/rxjava.properties'
+    exclude 'lib/x86/*.so'
+    exclude 'lib/x86_64/*.so'
+  }
 }
 
 dependencies {
-  implementation fileTree(dir: 'libs', include: ['*.jar'])
-  testImplementation rootProject.ext.dependencies["junit"]
-  api 'com.google.protobuf:protobuf-java:3.6.1'
-  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  api(rootProject.ext.dependencies["bitcoinj-core"]) {
+    exclude group: 'com.google.protobuf'
+  }
+  api(rootProject.ext.dependencies["web3j"])
+  api(rootProject.ext.dependencies["gson"])
+  api(rootProject.ext.dependencies["guava"])
+  api 'com.google.protobuf:protobuf-kotlin-lite:3.19.4'
+  api('com.google.crypto.tink:tink-android:1.6.1') {
+    exclude module: 'protobuf-lite'
+  }
+  implementation(rootProject.ext.dependencies["semver"])
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+  testImplementation 'junit:junit:4.13.2'
 }
 
-protobuf {
-  protoc {
-    // You still need protoc like in the non-Android case
-    if (osdetector.os == "osx") {
-      artifact = 'com.google.protobuf:protoc:3.19.4:osx-x86_64'
-    } else {
-      artifact = 'com.google.protobuf:protoc:3.19.4'
-    }
-  }
-  plugins {
-    javalite {
-      // The codegen for lite comes as a separate artifact
-      artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0:osx-x86_64'
-    }
-  }
-  generateProtoTasks {
-    all().each { task ->
-      task.builtins {
-        // In most cases you don't need the full Java output
-        // if you use the lite output.
-        remove java
-      }
-      task.plugins {
-        javalite {}
-      }
-    }
-  }
+task sourceJar(type: Jar) {
+  from android.sourceSets.main.java.srcDirs
+  archiveClassifier.set("sources")
 }
-
-task arcGen(dependsOn: ['generateProto']) {
-}
-
-
-sourceCompatibility = "8"
-targetCompatibility = "8"
-
-compileKotlin {
-  kotlinOptions {
-    jvmTarget = "1.8"
-  }
-}
-compileTestKotlin {
-  kotlinOptions {
-    jvmTarget = "1.8"
-  }
-}
-
-//task sourceJar(type: Jar) {
-//  from android.sourceSets.main.java.srcDirs
-//  archiveClassifier.set("sources")
-//}
 
 signing {
   sign publishing.publications
@@ -92,7 +72,7 @@ signing {
 publishing {
   repositories {
     maven {
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
+      url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
 //      url = uri(snapshotRepositoryUrl)
       credentials {
         username = repositoryUsername
@@ -105,7 +85,7 @@ publishing {
       groupId 'io.arcblock.did'
       artifactId getArtificatId()
       version getVersionName()
-      artifact("$buildDir/libs/protobuf.jar")
+      artifact("$buildDir/outputs/aar/${getArtificatId()}-release.aar")
       pom {
         name = artifactId
         description = 'A android library for generating DID identicons.'
