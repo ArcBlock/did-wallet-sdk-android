@@ -61,7 +61,10 @@ protobuf {
     }
   }
 }
-
+java {
+  withJavadocJar()
+  withSourcesJar()
+}
 task arcGen(dependsOn: ['generateProto']) {
 }
 
@@ -80,10 +83,15 @@ compileTestKotlin {
   }
 }
 
-//task sourceJar(type: Jar) {
+task sourceJar(type: Jar) {
+  from sourceSets.main.allJava
 //  from android.sourceSets.main.java.srcDirs
-//  archiveClassifier.set("sources")
-//}
+  archiveClassifier.set("sources")
+}
+
+task javadocForMaven(type: Jar) {
+  archiveClassifier.set("javadoc")
+}
 
 signing {
   sign publishing.publications
@@ -105,7 +113,7 @@ publishing {
       groupId 'io.arcblock.did'
       artifactId getArtificatId()
       version getVersionName()
-      artifact("$buildDir/libs/protobuf.jar")
+      from components.java
       pom {
         name = artifactId
         description = 'A android library for generating DID identicons.'

@@ -253,14 +253,6 @@ class IdGeneratorTest {
   }
 
   @Test
-  fun testSwapAddress() {
-    val ad =
-      IdGenerator.toSwapAddress("0E79AD918B562F7085DC5E5CAEE56A949BDAF3AC143FE0340F6EEB233FF8ED30".decodeB16())
-    println("swap:$ad")
-    Assert.assertEquals("z2UHsX5Gzj24oT81Kis6fekS1xTRvdejNqM88", ad)
-  }
-
-  @Test
   fun testGenDelegateAddress() {
     val address = IdGenerator.genDelegateAddress(
       "z1ewYeWM7cLamiB6qy6mDHnzw1U5wEZCoj7",

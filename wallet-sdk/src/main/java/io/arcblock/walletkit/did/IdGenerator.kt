@@ -74,6 +74,13 @@ object IdGenerator {
     return DidKeyPair(keyType, dkKey.privKeyBytes)
   }
 
+  /**
+   * It takes a seed and a path and returns a key pair
+   *
+   * @param seedBytes The seed bytes.
+   * @param pathArray The path to the key.
+   * @return The private key and public key are returned as a tuple.
+   */
   fun genETHKeyPair(seedBytes: ByteArray, pathArray: Array<String>): ECKeyPair {
     var dkKey = HDKeyDerivation.createMasterPrivateKey(seedBytes)
     for (i in 1 until pathArray.size) {
