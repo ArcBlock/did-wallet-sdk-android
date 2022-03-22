@@ -1,3 +1,5 @@
 ## 1.0.1 (March 22, 2022)
+- fix: challenge support
+
 
 
