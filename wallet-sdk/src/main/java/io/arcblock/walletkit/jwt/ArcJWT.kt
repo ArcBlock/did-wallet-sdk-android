@@ -46,6 +46,7 @@ object ArcJWT {
       sessionId = sessionId,
       requestedClaims = jsonArray,
       action = action,
+      challenge = challenge,
     )
     val gs = Gson()
     val signContent =
