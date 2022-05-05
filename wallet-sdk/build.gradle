@@ -3,8 +3,8 @@ plugins {
   id 'org.jetbrains.kotlin.android'
   id 'maven-publish'
   id 'signing'
-  id 'jacoco'
 }
+
 def getArtificatId = { ->
   return "wallet-sdk"
 }
@@ -35,19 +35,9 @@ android {
   buildFeatures {
     viewBinding true
   }
-  testOptions {
-    unitTests.all {
-      jacoco {
-        includeNoLocationClasses = true
-      }
-    }
-    unitTests.returnDefaultValues = true
-  }
 
   buildTypes {
-    debug {
-      testCoverageEnabled true
-    }
+
     release {
       minifyEnabled false
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
