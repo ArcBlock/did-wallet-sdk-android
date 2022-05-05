@@ -8,9 +8,11 @@ plugins {
 def getArtificatId = { ->
   return "sdk-protobuf"
 }
+
 def getVersionName = { ->
-  return System.getenv('TAG_NAME') ?: "1.0.0"
+  new File(rootDir.getAbsolutePath() + '/version').text.replace("\n", "")
 }
+
 
 
 def snapshotRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL

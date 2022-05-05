@@ -4,12 +4,16 @@ plugins {
   id 'maven-publish'
   id 'signing'
 }
+
 def getArtificatId = { ->
   return "wallet-sdk"
 }
 def getVersionName = { ->
-  return System.getenv('TAG_NAME') ?: "1.0.0"
+  new File(rootDir.getAbsolutePath() + '/version').text.replace("\n", "")
 }
+
+// Test Report
+apply from: '../jacoco/modules.gradle'
 
 
 def snapshotRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
@@ -31,7 +35,9 @@ android {
   buildFeatures {
     viewBinding true
   }
+
   buildTypes {
+
     release {
       minifyEnabled false
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
