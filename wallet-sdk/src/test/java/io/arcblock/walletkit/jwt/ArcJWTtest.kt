@@ -1,8 +1,13 @@
 package io.arcblock.walletkit.jwt
 
 import com.google.common.io.BaseEncoding
+import com.google.gson.JsonArray
+import io.arcblock.walletkit.did.DidType
+import io.arcblock.walletkit.did.DidType.Companion
+import io.arcblock.walletkit.did.IdGenerator
 import io.arcblock.walletkit.did.KeyType.ED25519
 import io.arcblock.walletkit.utils.Base58Btc
+import org.junit.Assert
 import org.junit.Test
 
 /**
@@ -53,4 +58,14 @@ class ArcJwtTest{
 
   }
 
+  @Test
+  fun testGenRespon() {
+    val sk = "18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"
+    val skByte = BaseEncoding.base16().decode(sk)
+    val did = IdGenerator.sk2did(skByte, DidType.DID_TYPE_FORGE)
+    val respon = ArcJWT.genFeedBackJWT(JsonArray(),skByte, did, "1.1.0")
+    val json = ArcJWT.parseJWT(respon)
+    Assert.assertEquals(json["iss"].asString, did)
+
+  }
 }

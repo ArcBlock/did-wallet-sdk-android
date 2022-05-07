@@ -42,20 +42,6 @@ fun ByteArray.hash(type: HashType) = Hasher.hash(type, this)
 fun ByteArray.sign(sk: ByteArray) = Signer.sign(KeyType.ED25519, this, sk)
 fun ByteArray.sign(sk: ByteArray, type: KeyType) = Signer.sign(type, this, sk)
 
-/**
- * bigInteger to  unsign num
- */
-fun BigInteger.unSign() = if (this.signum() >= 0 ) this else {
-  val a1 = this.toByteArray()
-  val a2 = ByteArray(a1.size + 1)
-  a2[0] = 0
-  System.arraycopy(a1, 0, a2, 1, a1.size)
-  BigInteger(a2)
-}
-fun BigDecimal.balance() = DecimalFormat("#,###.####").format(this.toDouble())
 
-fun ByteArray.token(decimals: Int) =  BigInteger(this).unSign().toBigDecimal()
-  .setScale(4,BigDecimal.ROUND_HALF_UP)
-  .div(BigDecimal("1E$decimals"))
-  .balance()
+
 

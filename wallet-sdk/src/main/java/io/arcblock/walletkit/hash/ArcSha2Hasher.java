@@ -1,6 +1,7 @@
 package io.arcblock.walletkit.hash;
 
-
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by Nate Gu on 2019/2/16
@@ -18,24 +19,23 @@ public class ArcSha2Hasher {
     return sha256(input, 2);
   }
 
-  /**
-   * default round = 2
-   */
-  public static byte[] sha224(byte[] input) {
-    return sha224(input, 2);
-  }
 
   /**
-   * sha224 with custom round
+   * Return the bytes of hash encryption.
+   *
+   * @param data The data.
+   * @param algorithm The name of hash encryption.
+   * @return the bytes of hash encryption
    */
-  public static byte[] sha224(byte[] input, int round) {
-    if (round < 1) {
-      throw new RuntimeException("round can't less than 1");
-    }
-    if (round == 1) {
-      return EncryptUtils.encryptSHA224(input);
-    } else {
-      return sha224(EncryptUtils.encryptSHA224(input), round - 1);
+  private static byte[] hashTemplate(final byte[] data, final String algorithm) {
+    if (data == null || data.length <= 0) return null;
+    try {
+      MessageDigest md = MessageDigest.getInstance(algorithm);
+      md.update(data);
+      return md.digest();
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+      return null;
     }
   }
 
@@ -47,10 +47,14 @@ public class ArcSha2Hasher {
       throw new RuntimeException("round can't less than 1");
     }
     if (round == 1) {
-      return EncryptUtils.encryptSHA224ForJavaTest(input);
+      return encryptSHA224ForJavaTest(input);
     } else {
-      return sha224ForJavaTest(EncryptUtils.encryptSHA224ForJavaTest(input), round - 1);
+      return sha224ForJavaTest(encryptSHA224ForJavaTest(input), round - 1);
     }
+  }
+
+  public static byte[] encryptSHA224ForJavaTest(final byte[] data) {
+    return hashTemplate(data, "SHA-224");
   }
 
   /**
@@ -68,11 +72,26 @@ public class ArcSha2Hasher {
       throw new RuntimeException("round can't less than 1");
     }
     if (round == 1) {
-      return EncryptUtils.encryptSHA256(input);
+      return encryptSHA256(input);
     } else {
-      return sha256(EncryptUtils.encryptSHA256(input), round - 1);
+      return sha256(encryptSHA256(input), round - 1);
     }
   }
+
+  public static byte[] encryptSHA256(final byte[] data) {
+    return hashTemplate(data, "SHA-256");
+  }
+
+  /**
+   * Return the hex string of SHA256 encryption.
+   *
+   * @param data The data.
+   * @return the hex string of SHA256 encryption
+   */
+  //public static String encryptSHA256ToString(final String data) {
+  //  if (data == null || data.length() == 0) return "";
+  //  return encryptSHA256ToString(data.getBytes());
+  //}
 
   /**
    * default round = 2
@@ -89,10 +108,14 @@ public class ArcSha2Hasher {
       throw new RuntimeException("round can't less than 1");
     }
     if (round == 1) {
-      return EncryptUtils.encryptSHA384(input);
+      return encryptSHA384(input);
     } else {
-      return sha384(EncryptUtils.encryptSHA384(input), round - 1);
+      return sha384(encryptSHA384(input), round - 1);
     }
+  }
+
+  public static byte[] encryptSHA384(final byte[] data) {
+    return hashTemplate(data, "SHA-384");
   }
 
   /**
@@ -110,9 +133,13 @@ public class ArcSha2Hasher {
       throw new RuntimeException("round can't less than 1");
     }
     if (round == 1) {
-      return EncryptUtils.encryptSHA512(input);
+      return encryptSHA512(input);
     } else {
-      return sha512(EncryptUtils.encryptSHA512(input), round - 1);
+      return sha512(encryptSHA512(input), round - 1);
     }
+  }
+
+  public static byte[] encryptSHA512(final byte[] data) {
+    return hashTemplate(data, "SHA-512");
   }
 }

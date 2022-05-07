@@ -1,8 +1,12 @@
 package io.arcblock.walletkit.hash
 
 import com.google.common.io.BaseEncoding
+import io.arcblock.walletkit.did.HashType.SHA2
+import io.arcblock.walletkit.did.toHexString
+import okio.ByteString.Companion.decodeHex
 import org.junit.Assert
 import org.junit.Test
+import java.lang.Exception
 import java.security.Security
 
 class Sha2Test {
@@ -82,5 +86,53 @@ class Sha2Test {
       }
 
     }
+  }
+
+  @Test
+  fun testSha224() {
+    Assert.assertEquals("c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646", ArcSha2Hasher.sha256("1234567890".toByteArray(), 1).toHexString())
+    Assert.assertEquals(
+      "62c1f5b7b396dbaa9441dc6eed7a24fa5d8bdf392c6d5eae1fbbe9c4401e6eaa",
+      ArcSha2Hasher.sha256("1234567890".toByteArray()).toHexString()
+    )
+
+    Assert.assertEquals(
+      "62c1f5b7b396dbaa9441dc6eed7a24fa5d8bdf392c6d5eae1fbbe9c4401e6eaa",
+      ArcSha2Hasher.sha("1234567890".toByteArray()).toHexString()
+    )
+    Assert.assertEquals("9a494ea51a1c199e116dc06b2a50f4faae91c903dfef24a8d89eef04c0964d5e9e587d6b4d66e5cee17195641fec7267",
+      ArcSha2Hasher.sha384("1234567890".toByteArray()).toHexString()
+      )
+    Assert.assertEquals("85d3208a2ef613e7b8698ce1fe22a6e54e29b262d00644c46b326d4b3c9a7d5d6f78b25284519a7ca59e439beea03ea8a9badde46df28094a8677a7c547f747b",
+      ArcSha2Hasher.sha512("1234567890".toByteArray()).toHexString()
+    )
+
+
+    try {
+      ArcSha2Hasher.sha256("123456789".toByteArray(), 0)
+    }catch (e: Exception){
+      Assert.assertEquals("round can't less than 1", e.message)
+    }
+
+    try {
+      ArcSha2Hasher.sha384("123456789".toByteArray(), 0)
+    }catch (e: Exception){
+      Assert.assertEquals("round can't less than 1", e.message)
+    }
+
+    try {
+      ArcSha2Hasher.sha512("123456789".toByteArray(), 0)
+    }catch (e: Exception){
+      Assert.assertEquals("round can't less than 1", e.message)
+    }
+
+    try {
+      ArcSha2Hasher.sha224ForJavaTest("123456789".toByteArray(), 2)
+      ArcSha2Hasher.sha224ForJavaTest("123456789".toByteArray(), 0)
+    }catch (e: Exception){
+      Assert.assertEquals("round can't less than 1", e.message)
+    }
+
+
   }
 }
