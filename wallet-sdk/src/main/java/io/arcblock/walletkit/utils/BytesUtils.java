@@ -163,23 +163,7 @@ public class BytesUtils {
     }
   }
 
-  public static void i2bLittle4(int val, byte[] out, int outOfs) {
-    if ((outOfs < 0) || ((out.length - outOfs) < 4)) {
-      throw new ArrayIndexOutOfBoundsException();
-    }
-    out[outOfs] = (byte) (val);
-    out[outOfs + 1] = (byte) (val >> 8);
-    out[outOfs + 2] = (byte) (val >> 16);
-    out[outOfs + 3] = (byte) (val >> 24);
-  }
 
-  public static void b2iLittle64(byte[] in, int inOfs, int[] out) {
-    if ((inOfs < 0) || ((in.length - inOfs) < 64) ||
-        (out.length < 16)) {
-      throw new ArrayIndexOutOfBoundsException();
-    }
-    b2iLittle(in, inOfs, out, 0, 64);
-  }
 
   public static void i2bBig(int[] in, int inOfs, byte[] out, int outOfs, int len) {
     if ((inOfs < 0) || ((in.length - inOfs) < len / 4) ||
@@ -216,29 +200,5 @@ public class BytesUtils {
     }
   }
 
-  public static void i2bBig4(int val, byte[] out, int outOfs) {
-    if ((outOfs < 0) || ((out.length - outOfs) < 4)) {
-      throw new ArrayIndexOutOfBoundsException();
-    }
-    out[outOfs] = (byte) (val >> 24);
-    out[outOfs + 1] = (byte) (val >> 16);
-    out[outOfs + 2] = (byte) (val >> 8);
-    out[outOfs + 3] = (byte) (val);
-  }
 
-  public static void b2iBig64(byte[] in, int inOfs, int[] out) {
-    if ((inOfs < 0) || ((in.length - inOfs) < 64) ||
-        (out.length < 16)) {
-      throw new ArrayIndexOutOfBoundsException();
-    }
-    b2iBig(in, inOfs, out, 0, 64);
-  }
-
-  public static void b2iBig128(byte[] in, int inOfs, long[] out) {
-    if ((inOfs < 0) || ((in.length - inOfs) < 128) ||
-        (out.length < 16)) {
-      throw new ArrayIndexOutOfBoundsException();
-    }
-    b2iBig(in, inOfs, out, 0, 128);
-  }
 }

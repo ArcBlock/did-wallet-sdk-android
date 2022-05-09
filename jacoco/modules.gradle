@@ -27,6 +27,7 @@ project.afterEvaluate {
           }
 
           def excludes = [
+              '**/bean/*.class',
               '**/R.class',
               '**/R$*.class',
               '**/BuildConfig.*',
