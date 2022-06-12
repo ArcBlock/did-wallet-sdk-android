@@ -64,6 +64,7 @@ dependencies {
   implementation(rootProject.ext.dependencies["semver"])
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
   testImplementation 'junit:junit:4.13.2'
+  implementation 'net.i2p.crypto:eddsa:0.3.0'
 }
 
 task sourceJar(type: Jar) {
