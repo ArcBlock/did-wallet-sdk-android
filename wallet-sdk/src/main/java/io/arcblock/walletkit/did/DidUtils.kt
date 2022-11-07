@@ -86,7 +86,7 @@ object DidUtils {
     }
 
     if (isETH(address)) {
-      return RoleType.ERROR
+      return RoleType.ACCOUNT
     }
     try {
       return when (decodeDidEncodingType(address)) {
