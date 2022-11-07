@@ -1,6 +1,7 @@
 package io.arcblock.walletkit.did
 
 import com.google.common.io.BaseEncoding
+import io.arcblock.walletkit.did.RoleType.ERROR
 import io.arcblock.walletkit.utils.Base58Btc
 import io.arcblock.walletkit.utils.address
 import io.arcblock.walletkit.utils.decodeB58
@@ -81,18 +82,21 @@ object DidUtils {
     val address = did.address()
 
     if (did.isEmpty()) {
-      return RoleType.ACCOUNT
+      return RoleType.ERROR
     }
 
     if (isETH(address)) {
       return RoleType.ACCOUNT
     }
-
-    return when (decodeDidEncodingType(address)) {
-      EncodingType.BASE16 -> decodeDidRoleType(
-        BaseEncoding.base16().decode(formatHexString(address))
-      )
-      EncodingType.BASE58 -> decodeDidRoleType(Base58Btc.decode(address))
+    try {
+      return when (decodeDidEncodingType(address)) {
+        EncodingType.BASE16 -> decodeDidRoleType(
+          BaseEncoding.base16().decode(formatHexString(address))
+        )
+        EncodingType.BASE58 -> decodeDidRoleType(Base58Btc.decode(address))
+      }
+    }catch (e: Exception) {
+      return RoleType.ERROR
     }
   }
 
@@ -147,6 +151,7 @@ object DidUtils {
    * @param did DID binary :base58Btc decode from zXXXXXX
    */
   private fun decodeDidRoleType(did: ByteArray): RoleType {
+    if (did.size < 2) return ERROR
     val type = did.sliceArray(0..1)
     val x = type[0].toInt().shl(8) + type[1].toInt()
     return RoleType.values()[x.and(0b1111110000000000).shr(10)]

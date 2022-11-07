@@ -1,3 +1,9 @@
+## 1.0.5 (November 07, 2022)
+
+
+## 1.0.4 (August 15, 2022)
+- fix: decode role type error
+
 ## 1.0.3 (May 07, 2022)
 
 

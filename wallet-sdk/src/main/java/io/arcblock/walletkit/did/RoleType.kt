@@ -31,5 +31,6 @@ enum class RoleType(val value: Int) {
   TOKEN(17),
   FACTORY(18),
   ROLLUP(19),
-  ANY(63);
+  ANY(63),
+  ERROR(-1),
 }
