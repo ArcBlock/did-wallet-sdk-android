@@ -20,6 +20,7 @@ public class TypeUrls {
   public static final String STAKE = "fg:t:stake";
   public static final String REVOKE_STAKE = "fg:t:revoke_stake";
   public static final String CLAIM_STAKE = "fg:t:claim_stake";
+  public static final String SLASH_STAKE = "fg:t:slash_stake";
   public static final String SYS_UPGRADE = "fg:t:sys_upgrade";
   public static final String TRANSFER = "fg:t:transfer";
   public static final String TRANSFER_V2 = "fg:t:transfer_v2";
@@ -28,15 +29,20 @@ public class TypeUrls {
   public static final String ACQUIRE_ASSET ="fg:t:acquire_asset";
   public static final String ACQUIRE_ASSET_V2 ="fg:t:acquire_asset_v2";
   public static final String ACQUIRE_ASSET_V3 ="fg:t:acquire_asset_v3";
+  public static final String MINT_ASSET = "fg:t:mint_asset";
   public static final String DEPOSIT_TETHER= "fg:t:deposit_tether";
   public static final String EXCHANGE_TETHER= "fg:t:exchange_tether";
   public static final String DELEGATE= "fg:t:delegate";
   public static final String REVOKE_DELEGATE= "fg:t:revoke_delegate";
+  public static final String UPGRADE_NODE = "fg:t:upgrade_node";
 
   public static final String APPROVE_WITHDRAW= "fg:t:approve_withdraw";
   public static final String DEPOSIT_TOKEN= "fg:t:deposit_token";
+  public static final String DEPOSIT_TOKEN_V2= "fg:t:deposit_token_v2";
   public static final String REVOKE_WITHDRAW= "fg:t:revoke_withdraw";
   public static final String WITHDRAW_TOKEN= "fg:t:withdraw_token";
+  public static final String WITHDRAW_TOKEN_V2= "fg:t:withdraw_token_v2";
+
   public static final String CREATE_TOKEN = "fg:t:create_token";
   public static final String CREATE_FACTORY = "fg:t:create_factory";
   public static final String CREATE_ROLLUP = "fg:t:create_rollup";

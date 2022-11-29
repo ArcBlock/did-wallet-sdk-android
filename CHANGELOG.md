@@ -1,3 +1,9 @@
+## 1.0.7 (November 29, 2022)
+- fix: format number locale
+
+## 1.0.6 (November 29, 2022)
+- feat: support slash stake
+
 ## 1.0.5 (November 07, 2022)
 
 

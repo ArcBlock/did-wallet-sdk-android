@@ -5,12 +5,15 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode.DOWN
 import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 import kotlin.math.pow
 
 /**
  * Created by Nate on 2018/12/5
  */
 object ArcNumberUtils {
+  var symbolsEN_US: DecimalFormatSymbols = DecimalFormatSymbols.getInstance(Locale.US)
 
   fun formatNumberForTokenDisplay(number: String?, decimals: Int): String {
     val numberDecimal = string2BigDecimalWithScale(number ?: "0", decimals)
@@ -27,7 +30,7 @@ object ArcNumberUtils {
     if (number == null) {
       return "0"
     }
-    val nf = DecimalFormat("#,##0.000000")
+    val nf = DecimalFormat("#,##0.000000", symbolsEN_US)
     nf.roundingMode = DOWN
     return removeTheEndZero(nf.format(number))
   }
@@ -49,7 +52,7 @@ object ArcNumberUtils {
 
   fun formatNumberForFiatDisplay(number: BigDecimal): String {
     val format = "#,##0.00"
-    val nf = DecimalFormat(format)
+    val nf = DecimalFormat(format, symbolsEN_US)
     nf.roundingMode = DOWN
     return nf.format(number)
   }
@@ -72,7 +75,7 @@ object ArcNumberUtils {
 
   private fun formatNumberForSend(number: BigDecimal): String {
     val format = "##0.000000"
-    val nf = DecimalFormat(format)
+    val nf = DecimalFormat(format, symbolsEN_US)
     nf.roundingMode = DOWN
     return removeTheEndZero(nf.format(number))
   }
