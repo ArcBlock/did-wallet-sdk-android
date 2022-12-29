@@ -19,5 +19,6 @@ class StringExtendsKtTest {
 
     Assert.assertEquals("did:abt:zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb","zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb".did())
     Assert.assertEquals("did:abt:zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb","did:abt:zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb".did())
+    Assert.assertEquals("did:abt:zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb","DID:abt:zNKdPEPXWAydNbWtZTTYfs84XnxHhDG4b6kb".did())
   }
 }
