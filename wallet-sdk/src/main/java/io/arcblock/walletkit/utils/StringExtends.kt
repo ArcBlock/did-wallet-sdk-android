@@ -29,10 +29,13 @@ fun String.decodeB58() = Base58Btc.decode(this)
 fun String.decodeB64() = BaseEncoding.base64().decode(this)
 fun String.decodeB64Url() = BaseEncoding.base64Url().decode(this)
 fun String.decodeB16() = BaseEncoding.base16().decode(this)
-fun String.address() = this.removePrefix("did:abt:")
-fun String.did() =  if (this.startsWith("did:abt:")) this else "did:abt:".plus(this)
-fun ByteArray.toByteString() = ByteString.copyFrom(this)
 
+fun String.address() = if (this.lowercase().startsWith("did:abt:", true)) {
+  this.substring(8)
+} else this
+
+fun String.did() = if (this.startsWith("did:abt:", ignoreCase = true)) this else "did:abt:".plus(this)
+fun ByteArray.toByteString() = ByteString.copyFrom(this)
 
 fun ByteArray.encodeB58() = Base58Btc.encode(this)
 fun ByteArray.encodeB64() = BaseEncoding.base64().encode(this)
@@ -40,7 +43,10 @@ fun ByteArray.encodeB64Url() = BaseEncoding.base64Url().encode(this)
 fun ByteArray.encodeB16() = BaseEncoding.base16().encode(this)
 fun ByteArray.hash(type: HashType) = Hasher.hash(type, this)
 fun ByteArray.sign(sk: ByteArray) = Signer.sign(KeyType.ED25519, this, sk)
-fun ByteArray.sign(sk: ByteArray, type: KeyType) = Signer.sign(type, this, sk)
+fun ByteArray.sign(
+  sk: ByteArray,
+  type: KeyType
+) = Signer.sign(type, this, sk)
 
 
 
