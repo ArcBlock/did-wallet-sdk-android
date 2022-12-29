@@ -34,7 +34,7 @@ fun String.address() = if (this.lowercase().startsWith("did:abt:", true)) {
   this.substring(8)
 } else this
 
-fun String.did() = if (this.startsWith("did:abt:", ignoreCase = true)) this else "did:abt:".plus(this)
+fun String.did() = if (this.startsWith("did:abt:", ignoreCase = true)) "did:abt:".plus(this.substring(8)) else "did:abt:".plus(this)
 fun ByteArray.toByteString() = ByteString.copyFrom(this)
 
 fun ByteArray.encodeB58() = Base58Btc.encode(this)
