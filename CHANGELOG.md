@@ -1,3 +1,6 @@
+## 1.0.8 (December 29, 2022)
+- fix: did prefix case ignore
+
 ## 1.0.7 (November 29, 2022)
 - fix: format number locale
 
