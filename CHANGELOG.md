@@ -1,3 +1,6 @@
+## 1.0.9 (February 09, 2023)
+- feat: update RSA and AES
+
 ## 1.0.8 (December 29, 2022)
 - fix: did prefix case ignore
 
