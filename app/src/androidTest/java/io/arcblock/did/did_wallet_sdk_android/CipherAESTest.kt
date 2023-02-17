@@ -2,7 +2,9 @@ package io.arcblock.did.did_wallet_sdk_android
 
 import android.util.Log
 import io.arcblock.walletkit.did.toHexString
+import io.arcblock.walletkit.jwt.ArcJWT
 import io.arcblock.walletkit.utils.AESEcbUtil
+import io.arcblock.walletkit.utils.Base58Btc
 import okio.internal.commonToUtf8String
 import org.junit.Assert
 import org.junit.Test
@@ -25,5 +27,6 @@ class CipherAESTest {
     Assert.assertEquals("", AESEcbUtil.decryptByte2Byte(codedText, "123456").commonToUtf8String())
     Assert.assertEquals("", AESEcbUtil.decryptByte2String(codedText, "123456"))
   }
+
 
 }
