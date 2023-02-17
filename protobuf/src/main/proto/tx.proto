@@ -261,6 +261,14 @@ message UpdateAssetTx {
   // ocap won't update data into state if app is interested in this tx.
   google.protobuf.Any data = 15;
 }
+
+message ConsumeAssetTx {
+  string address = 1;
+  // ocap won't update data into state if app is interested in this tx.
+  google.protobuf.Any data = 15;
+}
+
+
 // An asset factory is readonly by default
 // Thus any change to the factory result a new factory
 message CreateFactoryTx {
@@ -606,6 +614,7 @@ message ItxStub {
     // Assets
     CreateAssetTx create_asset = 5;
     UpdateAssetTx update_asset = 6;
+    ConsumeAssetTx consume_asset = 7;
 
     // Trade
     ExchangeTx exchange = 10;

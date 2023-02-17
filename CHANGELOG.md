@@ -1,3 +1,6 @@
+## 1.0.10 (February 17, 2023)
+
+
 ## 1.0.9 (February 09, 2023)
 - feat: update RSA and AES
 
