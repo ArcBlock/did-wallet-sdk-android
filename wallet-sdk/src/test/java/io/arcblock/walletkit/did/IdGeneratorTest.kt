@@ -265,4 +265,17 @@ class IdGeneratorTest {
     )
     Assert.assertEquals("z2bN1iucQC2obei6B2cJrtp7d9zbVCKoceKEo", address)
   }
+
+
+  @Test
+  fun testGenerate() {
+    val rootStr = "om4vHw/U2PFpFUeZsPBHQmYZgkOTwkYLYhSXHcsXA8VXQ7ngiVYMIAFk23LYqH3HfsOQ+EDQgoA0ZeiXJd11Yw=="
+    val defaultMainKP = IdGenerator.genAppKeyPair("zfffffffffffffffffffffffffffffffff", 0, rootStr.decodeB64(), ED25519)
+    println("private key: ${defaultMainKP.privateKey.encodeB64()}")
+    val defaultMainAddress = IdGenerator.sk2did(
+      defaultMainKP.privateKey, DidType.DID_TYPE_FORGE)
+    println("address: $defaultMainAddress")
+  }
+
+
 }

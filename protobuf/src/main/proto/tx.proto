@@ -24,21 +24,22 @@ message DeclareTx {
   // ocap won't update data into state if app is interested in this tx.
   google.protobuf.Any data = 15;
 }
+
+// if rules are empty, signature for this type_url is entirely delegated
+message DelegateOp {
+  string type_url = 1;
+
+  repeated string rules = 2 [ deprecated = true ];
+
+  // since v1.18.96
+  DelegateLimit limit = 3;
+}
 message DelegateTx {
   string address = 1; // address of the delegation between sender and receiver
   string to = 2;      // delegatee's address
   repeated DelegateOp ops = 3; // a list of operations permitted, ops will be merged when multiple delegation is done on same address
 
   google.protobuf.Any data = 15;
-}
-
-// if rules are empty, signature for this type_url is entirely delegated
-// otherwise rules are checked one by one, relationship between rules is AND.
-// a rule is an expression defined in rule_parser
-// (github.com/arcblock/rule-parser) one can setup
-message DelegateOp {
-  string type_url = 1;
-  repeated string rules = 2;
 }
 message RevokeDelegateTx {
   string address = 1; // address of the delegation between sender and receiver
@@ -183,7 +184,6 @@ message AcquireAssetV2Tx {
   repeated VariableInput variables = 4;
 
   // issuer info to mint the asset
-  // TODO: enforce issuer in acquire/mint asset protocol
   NFTIssuer issuer = 5;
 
   // ocap won't touch this field. Only app shall handle it.
@@ -208,13 +208,12 @@ message AcquireAssetV3Tx {
   repeated VariableInput variables = 5;
 
   // issuer info to mint the asset
-  // TODO: enforce issuer in acquire/mint asset protocol
   NFTIssuer issuer = 6;
 
   // ocap won't touch this field. Only app shall handle it.
   google.protobuf.Any data = 15;
 }
-// The factory owner can mint new assets without any cost
+// The factory owner and trusted issuers can mint new assets without paying acquire cost
 message MintAssetTx {
   // the address of the asset factory
   string factory = 1;
@@ -257,18 +256,16 @@ message CreateAssetTx {
 message UpdateAssetTx {
   string address = 1;
   string moniker = 2;
+  bool consumed = 3;
 
   // ocap won't update data into state if app is interested in this tx.
   google.protobuf.Any data = 15;
 }
-
 message ConsumeAssetTx {
   string address = 1;
   // ocap won't update data into state if app is interested in this tx.
   google.protobuf.Any data = 15;
 }
-
-
 // An asset factory is readonly by default
 // Thus any change to the factory result a new factory
 message CreateFactoryTx {
@@ -285,7 +282,6 @@ message CreateFactoryTx {
 
   // who can mint assets from this factory
   // default to empty, which only the factory owner can mint assets from
-  // If set to ["*"], then anyone can mint from this factory
   repeated string trusted_issuers = 5;
 
   // input params to mint new asset, can be any combination of tokens + assets
@@ -379,8 +375,11 @@ message SlashStakeTx {
 message CreateRollupTx {
   string address = 1;
 
-  // can be token or factory adddress
+  // can be token or factory address
   string token_address = 2;
+
+  // vault to store locked token
+  string vault_address = 3;
 
   // string erc20_token_address = 3; // deprecated
 
@@ -537,6 +536,9 @@ message CreateRollupBlockTx {
   // Added since v1.13.61
   string min_reward = 11;
 
+  // Added since v1.18.32
+  bool governance = 12;
+
   google.protobuf.Any data = 50;
 }
 message ClaimBlockRewardTx {
@@ -562,21 +564,21 @@ message ResumeRollupTx {
   string rollup = 1;
   google.protobuf.Any data = 10;
 }
-message MigrateRollupContractTx {
+message CloseRollupTx {
   string rollup = 1;
-  string to = 2;
+  string message = 2;
   google.protobuf.Any data = 10;
 }
-message MigrateRollupTokenTx {
+message MigrateRollupTx {
   string rollup = 1;
-  string from = 2;       // from which contract
-  string to = 3;         // to which contract, must points to latest contract address
-  TokenInput token = 4;           // token address and amount to migrate
+  string to = 2;
+  string type = 3;
+  string message = 4;
   google.protobuf.Any data = 10;
 }
 message DepositTokenV2Tx {
   // Should be a multi-signed transaction
-  // Submited by user, signed by rollup validators
+  // Submitted by user, signed by rollup validators
   TokenInput token = 1;           // token address and amount to deposit
   string to = 2;                  // address to deposit token to, should be same as tx.from
   string proposer = 3;            // the rollup validator that pays for this deposit, other validators exists in tx.signatures
@@ -650,7 +652,7 @@ message ItxStub {
     ClaimBlockRewardTx claim_block_reward = 55;
     PauseRollupTx pause_rollup = 56;
     ResumeRollupTx resume_rollup = 57;
-    MigrateRollupContractTx migrate_rollup_contract = 58;
-    MigrateRollupTokenTx migrate_rollup_token = 59;
+    MigrateRollupTx migrate_rollup = 58;
+    CloseRollupTx close_rollup = 60;
   }
 }
