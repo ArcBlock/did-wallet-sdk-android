@@ -43,10 +43,26 @@ android {
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }
   }
+  compileOptions {
+    sourceCompatibility 1.8
+    targetCompatibility 1.8
+  }
+
   packagingOptions {
     exclude 'META-INF/rxjava.properties'
     exclude 'lib/x86/*.so'
     exclude 'lib/x86_64/*.so'
+  }
+
+  configurations.all {
+    c -> c.resolutionStrategy.eachDependency {
+      DependencyResolveDetails dependency ->
+        if (dependency.requested.group == 'org.bouncycastle') {
+          dependency.useTarget 'org.bouncycastle:bcprov-jdk15to18:1.69'
+        } else if (dependency.requested.group == "com.google.protobuf") {
+          dependency.useTarget 'com.google.protobuf:protobuf-java:3.6.1'
+        }
+    }
   }
 }
 

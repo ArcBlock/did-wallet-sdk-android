@@ -8,8 +8,8 @@ android {
 
   defaultConfig {
     applicationId "io.arcblock.did.did_wallet_sdk_android"
-    minSdk 21
-    targetSdk 31
+    minSdk 24
+    targetSdk 33
     versionCode 1
     versionName "1.0"
 
