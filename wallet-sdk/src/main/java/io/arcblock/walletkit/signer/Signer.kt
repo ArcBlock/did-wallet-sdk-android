@@ -36,6 +36,10 @@ object Signer {
       ETHEREUM -> {
         ECKeyPair.create(sk).sign(content).encodeToDER()
       }
+      PASSKEY -> {
+        // not support
+        ByteArray(0)
+      }
     }
   }
 
@@ -67,6 +71,9 @@ object Signer {
               it
             })
           }
+        }
+        PASSKEY -> {
+          return false
         }
       }
     } catch (e: Exception) {

@@ -281,6 +281,9 @@ object IdGenerator {
       ETHEREUM -> {
         Numeric.toBytesPadded(ECKeyPair.create(sk).publicKey, 64)
       }
+      PASSKEY -> {
+        ByteArray(32)
+      }
     }
   }
 

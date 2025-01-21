@@ -12,7 +12,7 @@ import org.web3j.utils.Numeric
  **/
 class DidKeyPair(keyType: KeyType, var privateKey: ByteArray) {
 
-  var publicKey: ByteArray
+  lateinit var publicKey: ByteArray
 
   init {
     when (keyType) {
