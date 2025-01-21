@@ -1,5 +1,7 @@
 package io.arcblock.walletkit.did
 
+import io.reactivex.internal.fuseable.QueueFuseable.ANY
+
 /**
  * Author       :paperhuang
  * Time         :2019/2/14
@@ -32,6 +34,8 @@ enum class RoleType(val value: Int) {
   FACTORY(18),
   ROLLUP(19),
   STORAGE(20),
+  PROFILE(21),
+  PASSKEY(22),
   ANY(63),
   ERROR(-1),
 
@@ -59,6 +63,8 @@ fun String.toRoleType() = when(this.lowercase()) {
   RoleType.FACTORY.name.lowercase() -> RoleType.FACTORY
   RoleType.ROLLUP.name.lowercase() -> RoleType.ROLLUP
   RoleType.STORAGE.name.lowercase() -> RoleType.STORAGE
+  RoleType.PROFILE.name.lowercase() -> RoleType.PROFILE
+  RoleType.PASSKEY.name.lowercase() -> RoleType.PASSKEY
   RoleType.ANY.name.lowercase() -> RoleType.ANY
 
   else -> RoleType.ERROR

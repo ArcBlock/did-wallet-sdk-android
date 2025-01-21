@@ -43,6 +43,8 @@ class SignerTest {
     Assert.assertEquals(BaseEncoding.base16().encode(kp.getFixedPK()), pk)
   }
 
+
+
   @Test
   fun testSecp256Sign() {
     var sk = BaseEncoding.base16()
@@ -215,7 +217,8 @@ class SignerTest {
       "4C6CC2FEFEB4CE33FA88684AACEDF653A4F33621890055EAACA82C5952C407CF26EB786B6330AFE7A09FA725B7DFEBF792B24AC93A8E1A447BE029E45762390F"
     val pk =
       "E4852B7091317E3622068E62A5127D1FB0D4AE2FC50213295E10652D2F0ABFC7"
-
+    val did = IdGenerator.pk2Address(pk.decodeB16(), DidType.DID_TYPE_FORGE)
+    println("did: $did")
     val result = Signer.verify(
       ED25519,
       messageUtf8.toByteArray(),

@@ -33,6 +33,8 @@ data class DidType(
       DidType(RoleType.TX, KeyType.ED25519, HashType.SHA3, EncodingType.BASE58)
     val DID_TYPE_ETHEREUM =
       DidType(RoleType.ACCOUNT, KeyType.ETHEREUM, HashType.KECCAK, EncodingType.BASE16)
+    val DID_TYPE_PASSKEY =
+      DidType(RoleType.PASSKEY, KeyType.PASSKEY, HashType.SHA2, EncodingType.BASE58)
 
     /**
      * Given a DID, return the type of the DID

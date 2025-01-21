@@ -7,5 +7,5 @@ package io.arcblock.walletkit.did
  * Edited Time  :
  **/
 enum class KeyType(val value: Int) {
-  ED25519(0), SECP256K1(1), ETHEREUM(2)
+  ED25519(0), SECP256K1(1), ETHEREUM(2), PASSKEY(3)
 }

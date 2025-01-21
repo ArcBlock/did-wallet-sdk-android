@@ -1,5 +1,6 @@
 package io.arcblock.walletkit.did
 
+import android.util.Log.println
 import com.google.common.io.BaseEncoding
 import io.arcblock.walletkit.bip44.Bip44Utils
 import io.arcblock.walletkit.did.EncodingType.BASE16

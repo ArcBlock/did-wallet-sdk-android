@@ -374,6 +374,22 @@ message SlashStakeTx {
   // ocap won't touch this field. Only app shall handle it.
   google.protobuf.Any data = 50;
 }
+// Return assets from the stake
+// Only stake receiver can do this
+// The return takes assets(staked) away from the stake immediately
+message ReturnStakeTx {
+  string address = 1;
+
+  // Can slash any combination of tokens + assets
+  // Can slash part of it or all of it
+  repeated TransactionInput outputs = 2;
+
+  // Human readable message help to identify the reason of the slash
+  string message = 3;
+
+  // ocap won't touch this field. Only app shall handle it.
+  google.protobuf.Any data = 50;
+}
 
 // --------------------- Rollup Related -------------------------------------
 message CreateRollupTx {
@@ -645,6 +661,7 @@ message ItxStub {
     RevokeStakeTx revoke_stake = 41;
     ClaimStakeTx claim_stake = 42;
     SlashStakeTx slash_stake = 43;
+    ReturnStakeTx return_stake = 44;
     UpgradeNodeTx upgrade_node = 49;
 
     // Rollup
