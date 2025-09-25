@@ -32,6 +32,10 @@ class DidKeyPair(keyType: KeyType, var privateKey: ByteArray) {
           publicKey = Numeric.toBytesPadded(it.publicKey, 64)
         }
       }
+      PASSKEY -> {
+        // PASSKEY handling - use provided private/public key as is
+        publicKey = IdGenerator.sk2pk(keyType, privateKey)
+      }
     }
   }
 }

@@ -4,7 +4,8 @@ plugins {
 }
 
 android {
-  compileSdk 31
+  namespace 'io.arcblock.did.did_wallet_sdk_android'
+  compileSdk 34
 
   defaultConfig {
     applicationId "io.arcblock.did.did_wallet_sdk_android"
@@ -14,6 +15,10 @@ android {
     versionName "1.0"
 
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+  }
+  packagingOptions {
+    pickFirst '**/protobuf.properties'
+    exclude 'META-INF/proguard/androidx-annotations.pro'
   }
 
   buildTypes {
@@ -35,16 +40,14 @@ android {
       DependencyResolveDetails dependency ->
         if (dependency.requested.group == 'org.bouncycastle') {
           dependency.useTarget 'org.bouncycastle:bcprov-jdk15to18:1.69'
-        } else if (dependency.requested.group == "com.google.protobuf") {
-          dependency.useTarget 'com.google.protobuf:protobuf-java:3.6.1'
         }
     }
   }
 }
 
 dependencies {
-  implementation 'io.arcblock.did:sdk-protobuf:1.0.0'
-  implementation 'io.arcblock.did:wallet-sdk:1.0.0'
+  implementation project(':protobuf')
+  implementation project(':wallet-sdk')
   implementation 'androidx.core:core-ktx:1.7.0'
   implementation 'androidx.appcompat:appcompat:1.4.1'
   implementation 'com.google.android.material:material:1.5.0'

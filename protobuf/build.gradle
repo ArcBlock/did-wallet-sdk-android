@@ -25,13 +25,13 @@ def repositoryPassword = project.findProperty("nexus.pw") ?: hasProperty('NEXUS_
 
 
 sourceSets {
-  main.java.srcDirs += "${protobuf.generatedFilesBaseDir}/main/javalite"
+  main.java.srcDirs += "${protobuf.generatedFilesBaseDir}/main/java"
 }
 
 dependencies {
   implementation fileTree(dir: 'libs', include: ['*.jar'])
   testImplementation rootProject.ext.dependencies["junit"]
-  api 'com.google.protobuf:protobuf-java:3.6.1'
+  api "com.google.protobuf:protobuf-java:3.6.1"
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
 
@@ -39,26 +39,16 @@ protobuf {
   protoc {
     // You still need protoc like in the non-Android case
     if (osdetector.os == "osx") {
-      artifact = 'com.google.protobuf:protoc:3.19.4:osx-x86_64'
+      artifact = 'com.google.protobuf:protoc:3.6.1:osx-x86_64'
     } else {
-      artifact = 'com.google.protobuf:protoc:3.19.4'
-    }
-  }
-  plugins {
-    javalite {
-      // The codegen for lite comes as a separate artifact
-      artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0:osx-x86_64'
+      artifact = 'com.google.protobuf:protoc:3.6.1'
     }
   }
   generateProtoTasks {
     all().each { task ->
       task.builtins {
-        // In most cases you don't need the full Java output
-        // if you use the lite output.
-        remove java
-      }
-      task.plugins {
-        javalite {}
+        // Generate standard Java code, not lite
+        java {}
       }
     }
   }
@@ -66,6 +56,23 @@ protobuf {
 java {
   withJavadocJar()
   withSourcesJar()
+}
+
+// Configure the built-in sourcesJar task to handle duplicates
+tasks.named('sourcesJar').configure {
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Configure the main jar task for Android compatibility
+tasks.named('jar').configure {
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  manifest {
+    attributes(
+      'Implementation-Title': project.name,
+      'Implementation-Version': project.version,
+      'Implementation-Vendor': 'ArcBlock'
+    )
+  }
 }
 task arcGen(dependsOn: ['generateProto']) {
 }
@@ -85,17 +92,13 @@ compileTestKotlin {
   }
 }
 
-task sourceJar(type: Jar) {
-  from sourceSets.main.allJava
-//  from android.sourceSets.main.java.srcDirs
-  archiveClassifier.set("sources")
-}
 
 task javadocForMaven(type: Jar) {
   archiveClassifier.set("javadoc")
 }
 
 signing {
+  required { project.hasProperty("signing.keyId") }
   sign publishing.publications
 }
 

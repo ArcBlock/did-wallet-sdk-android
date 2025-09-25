@@ -60,6 +60,10 @@ message ValidatorFilter {
   repeated string validators = 1;
 }
 
+message TokenFactoryFilter {
+  repeated string token_factories = 1;
+}
+
 message TimeFilter {
   string start_date_time = 1;
   string end_date_time = 2;
@@ -84,7 +88,7 @@ message PageInfo {
   uint32 total = 3;
 }
 
-message TokenInfo {
+message TokenMeta {
   string address = 1;
   string balance = 2;
   int32 decimal = 3;
@@ -130,7 +134,7 @@ message IndexedTransaction {
   Transaction tx = 6;
   bool valid = 20;
   StatusCode code = 21;
-  repeated TokenSymbol token_symbols = 22;
+  repeated TokenMeta token_symbols = 22;
   repeated TransactionReceipt receipts = 16;
 }
 
@@ -149,7 +153,7 @@ message IndexedAccountState {
   BigUint total_stakes = 12;
   BigUint total_unstakes = 13;
   repeated string recent_num_txs = 14;
-  repeated TokenInfo tokens = 15;
+  repeated TokenMeta tokens = 15;
 }
 
 message IndexedAssetState {
@@ -191,6 +195,29 @@ message IndexedTokenState {
   string genesis_time = 10;
   string renaissance_time = 11;
   ForeignToken foreign_token = 13;
+  string token_factory_address = 14;
+  string max_total_supply = 15;
+  string initial_supply = 16;
+  google.protobuf.Any metadata = 17;
+  string website = 18;
+  
+  google.protobuf.Any data = 50;
+}
+
+message IndexedTokenFactoryState {
+  string address = 1;
+  string owner = 2;
+  string token_address = 3;
+  string reserve_address = 4;
+  CurveConfig curve = 5;
+  int32 fee_rate = 6;
+  string current_supply = 7;
+  string reserve_balance = 8;
+  string status = 9;
+  string genesis_time = 10;
+  string renaissance_time = 11;
+  IndexedTokenInput token = 12;
+  IndexedTokenInput reserve_token = 13;
   google.protobuf.Any data = 50;
 }
 
@@ -207,7 +234,7 @@ message IndexedFactoryState {
   repeated AssetFactoryHook hooks = 10;
   google.protobuf.Any data = 11;
   string balance = 13;
-  repeated TokenInfo tokens = 14;
+  repeated TokenMeta tokens = 14;
   uint32 num_minted = 15;
   string last_settlement = 16;
   string genesis_time = 17;
@@ -219,14 +246,14 @@ message IndexedStakeState {
   string address = 1;
   string sender = 2;
   string receiver = 3;
-  repeated TokenInfo tokens = 4;
+  repeated TokenMeta tokens = 4;
   repeated string assets = 5;
   bool revocable = 6;
   string genesis_time = 7;
   string renaissance_time = 8;
   string message = 9;
   uint32 revoke_waiting_period = 10;
-  repeated TokenInfo revoked_tokens = 11;
+  repeated TokenMeta revoked_tokens = 11;
   repeated string revoked_assets = 12;
   repeated string slashers = 13;
   string nonce = 14;
@@ -363,4 +390,43 @@ message IndexedDelegationState {
   string renaissance_time = 5;
   map<string, DelegateOpState> ops = 6;
   google.protobuf.Any data = 7;
+}
+
+enum TokenFlowDirection {
+  IN = 0;
+  OUT = 1;
+}
+
+message IndexedTokenFlow {
+  string value = 1;
+  string hash = 2;
+  string from = 3;
+  string to = 4;
+}
+
+message VerifyAccountRiskResult {
+  message BalanceRisky {
+    string address = 1;
+    string balance = 2;
+    string transfer_in = 3;    // amount of tokens transfer into this account
+    string transfer_out = 4;   // amount of tokens transfer out from this account
+    uint32 account_count = 5;  // number of accounts checked during risk verification
+    uint32 tx_count = 6;      // number of transactions checked during risk verification
+  }
+
+  bool is_risky = 1;
+  string reason = 2;
+  BalanceRisky data = 3;
+}
+
+message TokenDistribution {
+  string token_address = 1;
+  string tx_time = 2;
+  string account = 3;
+  string gas = 4;
+  string fee = 5;
+  string slashed_vault = 6;
+  string stake = 7;
+  string revoked_stake = 8;
+  string gas_stake = 9;
 }

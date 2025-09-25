@@ -24,6 +24,7 @@ def repositoryUsername = project.findProperty("nexus.username") ?: hasProperty('
 def repositoryPassword = project.findProperty("nexus.pw") ?: hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
 
 android {
+  namespace 'io.arcblock.walletkit'
   compileSdkVersion rootProject.ext.android["compileSdkVersion"]
   defaultConfig {
     minSdkVersion rootProject.ext.android["minSdkVersion"]
@@ -44,8 +45,12 @@ android {
     }
   }
   compileOptions {
-    sourceCompatibility 1.8
-    targetCompatibility 1.8
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  
+  kotlinOptions {
+    jvmTarget = '1.8'
   }
 
   packagingOptions {
@@ -73,7 +78,7 @@ dependencies {
   api(rootProject.ext.dependencies["web3j"])
   api(rootProject.ext.dependencies["gson"])
   api(rootProject.ext.dependencies["guava"])
-  api 'com.google.protobuf:protobuf-kotlin-lite:3.19.4'
+  api 'com.google.protobuf:protobuf-kotlin-lite:3.6.1'
   api('com.google.crypto.tink:tink-android:1.6.1') {
     exclude module: 'protobuf-lite'
   }
@@ -88,6 +93,7 @@ task sourceJar(type: Jar) {
 }
 
 signing {
+  required { project.hasProperty("signing.keyId") }
   sign publishing.publications
 }
 
