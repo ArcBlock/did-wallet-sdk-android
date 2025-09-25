@@ -47,6 +47,11 @@ public class TypeUrls {
   public static final String CREATE_FACTORY = "fg:t:create_factory";
   public static final String CREATE_ROLLUP = "fg:t:create_rollup";
 
+  public static final String CREATE_TOKEN_FACTORY = "fg:t:create_token_factory";
+  public static final String MINT_TOKEN = "fg:t:mint_token";
+  public static final String UPDATE_TOKEN_FACTORY = "fg:t:update_token_factory";
+  public static final String BURN_TOKEN = "fg:t:burn_token";
+
   // forge state
   public static final String ACCOUNT_STATE = "fg:s:account";
   public static final String ASSET_STATE = "fg:s:asset";

@@ -10,11 +10,10 @@ dependencyResolutionManagement {
   repositories {
     google()
     mavenCentral()
-    maven {
-      allowInsecureProtocol(true)
-      url "http://android-docs.arcblock.io/release"
-    }
     mavenLocal()
+    maven {
+      url "https://maven.aliyun.com/repository/public"
+    }
   }
 }
 rootProject.name = "did-wallet-sdk-android"
