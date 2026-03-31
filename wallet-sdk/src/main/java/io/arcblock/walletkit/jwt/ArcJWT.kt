@@ -12,7 +12,7 @@ import io.arcblock.walletkit.hash.Hasher
 import io.arcblock.walletkit.signer.Signer
 import io.arcblock.walletkit.utils.encodeB64Url
 import net.swiftzer.semver.SemVer
-import java.util.*
+import java.util.Date
 
 /**
  * Author       :paperhuang
@@ -77,6 +77,22 @@ object ArcJWT {
   }
 
   fun verifyJWT(token: String, pk: ByteArray, type: KeyType, version: String): Boolean {
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] verifyJWT: token=$token")
+    // Determine verification method from JWT header.alg (matching @arcblock/jwt behavior)
+    val headerAlg = getHeaderAlg(token)
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] verifyJWT: headerAlg=$headerAlg, type=$type, version=$version, pkLen=${pk.size}")
+
+    // Route to the correct verifier based on header.alg (primary) or KeyType (fallback)
+    val alg = headerAlg.lowercase()
+    val resolvedType = ALG_TO_KEY_TYPE[alg] ?: type
+
+    if (resolvedType == KeyType.PASSKEY || alg == "passkey") {
+      android.util.Log.d("ArcJWT", "[LOCAL-SDK] PASSKEY detected (alg=$alg), delegating to PasskeyJWTVerifier")
+      val result = PasskeyJWTVerifier.verifyJWT(token, pk, version)
+      android.util.Log.d("ArcJWT", "[LOCAL-SDK] PasskeyJWTVerifier result=$result")
+      return result
+    }
+
     val sig = token.substringAfterLast(".")
     val content = token.substringBeforeLast(".")
 
@@ -93,7 +109,50 @@ object ArcJWT {
         content.toByteArray()
       }
 
-    return Signer.verify(type, contentByteArray, pk, BaseEncoding.base64Url().decode(sig))
+    val padded = when (sig.length % 4) {
+      2 -> "$sig=="
+      3 -> "$sig="
+      else -> sig
+    }
+    val sigBytes = BaseEncoding.base64Url().decode(padded)
+    val pkHex = pk.joinToString("") { "%02x".format(it) }
+    val contentHashHex = contentByteArray.joinToString("") { "%02x".format(it) }
+    val sigHex = sigBytes.joinToString("") { "%02x".format(it) }
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] verify: resolvedType=$resolvedType, alg=$alg, version=$version")
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] pk($pkHex)")
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] contentHash($contentHashHex)")
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] sig($sigHex) sigLen=${sigBytes.size}")
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] content(first100)=${content.take(100)}")
+    val result = Signer.verify(resolvedType, contentByteArray, pk, sigBytes)
+    android.util.Log.d("ArcJWT", "[LOCAL-SDK] Signer.verify result=$result for resolvedType=$resolvedType")
+    return result
+  }
+
+  /**
+   * Map JWT header alg values to KeyType, matching @arcblock/jwt's signer lookup.
+   */
+  private val ALG_TO_KEY_TYPE = mapOf(
+    "ed25519" to KeyType.ED25519,
+    "es256k" to KeyType.SECP256K1,
+    "secp256k1" to KeyType.SECP256K1,
+    "ethereum" to KeyType.ETHEREUM,
+    "passkey" to KeyType.PASSKEY,
+  )
+
+  private fun getHeaderAlg(token: String): String {
+    return try {
+      val headerB64 = token.substringBefore(".")
+      val padded = when (headerB64.length % 4) {
+        2 -> "$headerB64=="
+        3 -> "$headerB64="
+        else -> headerB64
+      }
+      val headerJson = String(BaseEncoding.base64Url().decode(padded))
+      val header = JsonParser().parse(headerJson).asJsonObject
+      header.get("alg")?.asString ?: ""
+    } catch (e: Exception) {
+      ""
+    }
   }
 
 }

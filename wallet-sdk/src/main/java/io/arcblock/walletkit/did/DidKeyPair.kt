@@ -32,6 +32,10 @@ class DidKeyPair(keyType: KeyType, var privateKey: ByteArray) {
           publicKey = Numeric.toBytesPadded(it.publicKey, 64)
         }
       }
+      PASSKEY -> {
+        // Passkey key pairs are managed by the platform authenticator, not derived here
+        publicKey = ByteArray(0)
+      }
     }
   }
 }

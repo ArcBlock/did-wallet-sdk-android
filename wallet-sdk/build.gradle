@@ -12,8 +12,10 @@ def getVersionName = { ->
   new File(rootDir.getAbsolutePath() + '/version').text.replace("\n", "")
 }
 
-// Test Report
-apply from: '../jacoco/modules.gradle'
+// Test Report - only apply jacoco when building within the SDK project
+if (rootProject.name == 'did-wallet-sdk-android') {
+  apply from: '../jacoco/modules.gradle'
+}
 
 
 def snapshotRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
@@ -24,6 +26,7 @@ def repositoryUsername = project.findProperty("nexus.username") ?: hasProperty('
 def repositoryPassword = project.findProperty("nexus.pw") ?: hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
 
 android {
+  namespace 'io.arcblock.walletkit'
   compileSdkVersion rootProject.ext.android["compileSdkVersion"]
   defaultConfig {
     minSdkVersion rootProject.ext.android["minSdkVersion"]
@@ -46,6 +49,13 @@ android {
   compileOptions {
     sourceCompatibility 1.8
     targetCompatibility 1.8
+  }
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+
+  testOptions {
+    unitTests.returnDefaultValues = true
   }
 
   packagingOptions {
@@ -77,6 +87,8 @@ dependencies {
   api('com.google.crypto.tink:tink-android:1.6.1') {
     exclude module: 'protobuf-lite'
   }
+  // CBOR for COSE public key parsing (passkey JWT verification)
+  api 'com.upokecenter:cbor:4.5.2'
   implementation(rootProject.ext.dependencies["semver"])
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
   testImplementation 'junit:junit:4.13.2'

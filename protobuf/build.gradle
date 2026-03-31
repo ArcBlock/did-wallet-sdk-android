@@ -37,7 +37,6 @@ dependencies {
 
 protobuf {
   protoc {
-    // You still need protoc like in the non-Android case
     if (osdetector.os == "osx") {
       artifact = 'com.google.protobuf:protoc:3.19.4:osx-x86_64'
     } else {
@@ -46,15 +45,12 @@ protobuf {
   }
   plugins {
     javalite {
-      // The codegen for lite comes as a separate artifact
       artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0:osx-x86_64'
     }
   }
   generateProtoTasks {
     all().each { task ->
       task.builtins {
-        // In most cases you don't need the full Java output
-        // if you use the lite output.
         remove java
       }
       task.plugins {
@@ -87,7 +83,6 @@ compileTestKotlin {
 
 task sourceJar(type: Jar) {
   from sourceSets.main.allJava
-//  from android.sourceSets.main.java.srcDirs
   archiveClassifier.set("sources")
 }
 
@@ -103,7 +98,6 @@ publishing {
   repositories {
     maven {
             url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
-//      url = uri(snapshotRepositoryUrl)
       credentials {
         username = repositoryUsername
         password = repositoryPassword
