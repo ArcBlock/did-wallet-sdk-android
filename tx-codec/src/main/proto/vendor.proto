@@ -1,5 +1,6 @@
 syntax = "proto3";
 package vendor;
+option java_package = "io.arcblock.tx_codec.generated";
 
 import "google/protobuf/timestamp.proto";
 

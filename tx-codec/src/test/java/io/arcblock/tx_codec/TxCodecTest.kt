@@ -1,7 +1,7 @@
 package io.arcblock.tx_codec
 
-import ocap.Type.Transaction
-import ocap.Tx.TransferV2Tx
+import io.arcblock.tx_codec.generated.Type.Transaction
+import io.arcblock.tx_codec.generated.Tx.TransferV2Tx
 import com.google.protobuf.ByteString
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -29,52 +29,75 @@ class TxCodecTest {
     assertEquals(Encoding.PROTOBUF, TxCodec.detectEncoding(byteArrayOf(0xd9.toByte())))
   }
 
+  // ---- identity paths --------------------------------------------------
+
+  @Test
+  fun `convert with same encoding returns input unchanged`() {
+    val bytes = byteArrayOf(0x08, 0x01)
+    assertEquals(bytes, TxCodec.convert(bytes, Encoding.PROTOBUF, Encoding.PROTOBUF))
+  }
+
   // ---- protobuf round-trip ---------------------------------------------
 
   @Test
-  fun `protobuf bytes round-trip through decode then encode`() {
+  fun `protobuf bytes survive a CBOR round-trip`() {
     val tx = buildSampleTransferV2()
     val original = tx.toByteArray()
-    val decoded = TxCodec.decode(original)
-    assertEquals(Encoding.PROTOBUF, decoded.encoding)
-    val reEncoded = TxCodec.encode(decoded.tx, Encoding.PROTOBUF)
-    assertArrayEquals(original, reEncoded)
+    val cbor = TxCodec.convert(original, Encoding.PROTOBUF, Encoding.CBOR)
+    assertEquals(Encoding.CBOR, TxCodec.detectEncoding(cbor))
+    val back = TxCodec.convert(cbor, Encoding.CBOR, Encoding.PROTOBUF)
+    assertArrayEquals(original, back)
   }
 
-  // ---- CBOR round-trip -------------------------------------------------
+  // ---- toProtobuf / toEncoding shortcuts -------------------------------
 
   @Test
-  fun `CBOR bytes round-trip through decode then encode`() {
+  fun `toProtobuf auto-detects CBOR and converts`() {
     val tx = buildSampleTransferV2()
-    val cborBytes = TxCodec.encode(tx, Encoding.CBOR)
-    // Self-describe tag 55799 prefix present
-    assertEquals(Encoding.CBOR, TxCodec.detectEncoding(cborBytes))
-    val decoded = TxCodec.decode(cborBytes)
-    assertEquals(Encoding.CBOR, decoded.encoding)
-    // Re-encode produces identical bytes (canonical form is deterministic)
-    val reEncoded = TxCodec.encode(decoded, decoded.tx)
-    assertArrayEquals(cborBytes, reEncoded)
+    val cbor = TxCodec.convert(tx.toByteArray(), Encoding.PROTOBUF, Encoding.CBOR)
+    val proto = TxCodec.toProtobuf(cbor)
+    val roundTripped = Transaction.parseFrom(proto)
+    assertEquals(tx.from, roundTripped.from)
+    assertEquals(tx.itx.typeUrl, roundTripped.itx.typeUrl)
   }
 
   @Test
-  fun `CBOR decode preserves transaction top-level fields`() {
-    val tx = buildSampleTransferV2()
-    val cbor = TxCodec.encode(tx, Encoding.CBOR)
-    val decoded = TxCodec.decode(cbor)
-    assertEquals(tx.from, decoded.tx.from)
-    assertEquals(tx.nonce, decoded.tx.nonce)
-    assertEquals(tx.chainId, decoded.tx.chainId)
-    assertEquals(tx.pk, decoded.tx.pk)
-    assertEquals(tx.itx.typeUrl, decoded.tx.itx.typeUrl)
+  fun `toProtobuf leaves protobuf input unchanged`() {
+    val proto = buildSampleTransferV2().toByteArray()
+    assertArrayEquals(proto, TxCodec.toProtobuf(proto))
   }
 
   @Test
-  fun `CBOR decode preserves the transfer inner tx value`() {
+  fun `toEncoding re-encodes to the requested outbound format`() {
+    val proto = buildSampleTransferV2().toByteArray()
+    val cbor = TxCodec.toEncoding(proto, Encoding.CBOR)
+    assertEquals(Encoding.CBOR, TxCodec.detectEncoding(cbor))
+    // Converting back yields the original bytes
+    val back = TxCodec.toEncoding(TxCodec.toProtobuf(cbor), Encoding.PROTOBUF)
+    assertArrayEquals(proto, back)
+  }
+
+  // ---- field preservation ----------------------------------------------
+
+  @Test
+  fun `CBOR round-trip preserves transaction top-level fields`() {
     val tx = buildSampleTransferV2()
-    val cbor = TxCodec.encode(tx, Encoding.CBOR)
-    val decoded = TxCodec.decode(cbor)
+    val cbor = TxCodec.toEncoding(tx.toByteArray(), Encoding.CBOR)
+    val decoded = Transaction.parseFrom(TxCodec.toProtobuf(cbor))
+    assertEquals(tx.from, decoded.from)
+    assertEquals(tx.nonce, decoded.nonce)
+    assertEquals(tx.chainId, decoded.chainId)
+    assertEquals(tx.pk, decoded.pk)
+    assertEquals(tx.itx.typeUrl, decoded.itx.typeUrl)
+  }
+
+  @Test
+  fun `CBOR round-trip preserves the transfer inner tx value`() {
+    val tx = buildSampleTransferV2()
+    val cbor = TxCodec.toEncoding(tx.toByteArray(), Encoding.CBOR)
+    val decoded = Transaction.parseFrom(TxCodec.toProtobuf(cbor))
     val innerBefore = TransferV2Tx.parseFrom(tx.itx.value)
-    val innerAfter = TransferV2Tx.parseFrom(decoded.tx.itx.value)
+    val innerAfter = TransferV2Tx.parseFrom(decoded.itx.value)
     assertEquals(innerBefore.to, innerAfter.to)
     assertEquals(innerBefore.value.value, innerAfter.value.value)
   }
@@ -85,7 +108,7 @@ class TxCodecTest {
     val itxInner = TransferV2Tx.newBuilder()
       .setTo("z1djzQ7tYaSC2E183dxFMFScriZgvsrhQD1")
       .setValue(
-        ocap.Type.BigUint.newBuilder()
+        io.arcblock.tx_codec.generated.Type.BigUint.newBuilder()
           .setValue(ByteString.copyFrom(hexToBytes("0de0b6b3a7640000"))) // 10^18
       )
       .build()

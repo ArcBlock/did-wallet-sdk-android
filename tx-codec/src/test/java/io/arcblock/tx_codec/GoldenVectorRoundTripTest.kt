@@ -20,13 +20,15 @@ class GoldenVectorRoundTripTest {
       ?: error("missing /vectors/$name.cbor.bin")
     val original = stream.use { it.readBytes() }
 
-    val decoded = TxCodec.decode(original)
     assertArrayEquals(
-      "$name: self-describe tag 55799 prefix missing after encode",
+      "$name: self-describe tag 55799 prefix missing on golden input",
       io.arcblock.canonical_cbor.CanonicalCbor.SELF_DESCRIBE_PREFIX,
       original.copyOf(3)
     )
-    val reEncoded = TxCodec.encode(decoded.tx, Encoding.CBOR)
+
+    // CBOR -> protobuf -> CBOR round-trip exercises both reflection bridges.
+    val protoBytes = TxCodec.toProtobuf(original)
+    val reEncoded = TxCodec.toEncoding(protoBytes, Encoding.CBOR)
     assertArrayEquals(
       "$name: TxCodec round-trip differs from golden bytes",
       original,

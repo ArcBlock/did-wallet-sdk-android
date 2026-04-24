@@ -7,7 +7,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.Message
 import io.arcblock.canonical_cbor.CanonicalCborException
-import ocap.Type.Transaction
+import io.arcblock.tx_codec.generated.Type.Transaction
 import java.math.BigInteger
 
 /**

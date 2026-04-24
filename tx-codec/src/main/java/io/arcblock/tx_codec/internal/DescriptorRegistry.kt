@@ -2,8 +2,8 @@ package io.arcblock.tx_codec.internal
 
 import com.google.protobuf.Descriptors.Descriptor
 import io.arcblock.canonical_cbor.CanonicalCborException
-import ocap.Tx
-import ocap.Type
+import io.arcblock.tx_codec.generated.Tx
+import io.arcblock.tx_codec.generated.Type
 
 /**
  * Maps OCAP message simple names (e.g. `TransferV2Tx`) to the generated

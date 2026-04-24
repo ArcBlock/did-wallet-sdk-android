@@ -1,34 +1,44 @@
 package io.arcblock.tx_codec
 
-import com.google.protobuf.ByteString
 import io.arcblock.canonical_cbor.CanonicalCbor
+import io.arcblock.tx_codec.generated.Type.Transaction
 import io.arcblock.tx_codec.internal.MapToTransaction
 import io.arcblock.tx_codec.internal.TransactionToMap
-import ocap.Type.Transaction
 
 /**
  * OCAP Transaction codec with dual-encoding support.
  *
- * Decodes inbound tx bytes (CBOR or protobuf), exposes the result as a
- * [Transaction] so existing code paths remain unchanged, and re-encodes
- * back to the original wire format for outbound responses. The
- * [DecodedTx.encoding] field threads the inbound format through the
- * wallet's signing pipeline so `finalTx` bytes match what the DApp
- * expects to verify.
+ * Public API is **bytes-first**: the caller's Transaction representation
+ * (javalite, full-java, even a custom wire-compatible class) does not
+ * interact with tx-codec's internal types. This avoids duplicate-class
+ * issues on Android where the app usually uses javalite but tx-codec's
+ * reflection internals require the full runtime.
  *
- * Mirrors the responsibilities of `abt-wallet/src/libs/chain/tx-codec.ts`
- * for the Android client.
+ * Typical use from a signing flow:
+ *
+ * ```kotlin
+ * val oriBytes = Base58Btc.decode(claim.partialTx)
+ * val inboundEncoding = TxCodec.detectEncoding(oriBytes)
+ *
+ * // Normalize to protobuf for the existing javalite-based signing path.
+ * val protoBytes = TxCodec.toProtobuf(oriBytes)
+ * val tx = Transaction.parseFrom(protoBytes)   // app's javalite class
+ *
+ * val signed = signTx(tx)                      // existing code
+ *
+ * // Re-encode back to the inbound encoding so the DApp's signature
+ * // verification hash matches.
+ * val finalBytes = TxCodec.toEncoding(signed.toByteArray(), inboundEncoding)
+ * claim.finalTx = Base58Btc.encode(finalBytes)
+ * ```
+ *
+ * Mirrors the responsibilities of `abt-wallet/src/libs/chain/tx-codec.ts`.
  */
 object TxCodec {
 
-  /**
-   * RFC 8949 self-describe tag 55799. First 3 bytes of every canonical
-   * CBOR Transaction. Used to distinguish CBOR from protobuf on inbound
-   * bytes.
-   */
   private val CBOR_PREFIX: ByteArray = CanonicalCbor.SELF_DESCRIBE_PREFIX
 
-  /** Detect the inbound encoding by inspecting the first 3 bytes. */
+  /** Detect inbound encoding by inspecting the first 3 bytes. */
   @JvmStatic
   fun detectEncoding(bytes: ByteArray): Encoding =
     if (bytes.size >= 3 &&
@@ -38,53 +48,45 @@ object TxCodec {
     ) Encoding.CBOR else Encoding.PROTOBUF
 
   /**
-   * Decode inbound tx [bytes]. Auto-detects encoding. The returned
-   * [Transaction] is a standard protobuf instance regardless of the
-   * inbound encoding, so downstream access (`tx.from`, `tx.itx.typeUrl`,
-   * `tx.signaturesList`, etc.) works without branching.
+   * Convert Transaction wire bytes between CBOR and protobuf encodings.
+   * When [from] equals [to] the input is returned unchanged (no
+   * allocation). Otherwise the bytes round-trip through an internal
+   * protobuf Transaction representation.
    */
   @JvmStatic
-  fun decode(bytes: ByteArray): DecodedTx {
-    val encoding = detectEncoding(bytes)
-    val tx = when (encoding) {
+  fun convert(bytes: ByteArray, from: Encoding, to: Encoding): ByteArray {
+    if (from == to) return bytes
+    val tx: Transaction = when (from) {
       Encoding.CBOR -> {
         val map = CanonicalCbor.parseCanonical("Transaction", bytes)
         MapToTransaction.build(map)
       }
       Encoding.PROTOBUF -> Transaction.parseFrom(bytes)
     }
-    return DecodedTx(tx, encoding)
-  }
-
-  /**
-   * Encode [tx] to wire bytes in the specified [encoding]. Callers should
-   * use the same encoding that came in (from [decode]'s result).
-   */
-  @JvmStatic
-  fun encode(tx: Transaction, encoding: Encoding): ByteArray =
-    when (encoding) {
+    return when (to) {
       Encoding.CBOR -> {
         val map = TransactionToMap.convert(tx)
         CanonicalCbor.canonicalBytes("Transaction", map)
       }
       Encoding.PROTOBUF -> tx.toByteArray()
     }
+  }
 
   /**
-   * Convenience: encode using the same encoding the [DecodedTx] was
-   * produced with. Use this in call sites where you already have a
-   * [DecodedTx] but mutated the inner [Transaction] before re-encoding.
+   * Shortcut: normalize any inbound Transaction bytes to protobuf. Handy
+   * when the signing path is hard-wired to javalite or full-java
+   * protobuf APIs.
    */
   @JvmStatic
-  fun encode(decoded: DecodedTx, tx: Transaction = decoded.tx): ByteArray =
-    encode(tx, decoded.encoding)
+  fun toProtobuf(bytes: ByteArray): ByteArray =
+    convert(bytes, detectEncoding(bytes), Encoding.PROTOBUF)
 
-  // Package-internal re-export of canonical-cbor's self-describe prefix
-  // for tests that want to inspect the byte layout.
-  internal val SELF_DESCRIBE_PREFIX: ByteArray get() = CBOR_PREFIX
-
-  // Prevent accidental javac complaints about the unused import on some
-  // toolchains that strip it when Kotlin-only code compiles.
-  @Suppress("unused")
-  private val byteStringMarker: Class<*> = ByteString::class.java
+  /**
+   * Shortcut: Transaction protobuf bytes → the specified outbound encoding.
+   * Use this when writing `finalTx` to return to a DApp whose `partialTx`
+   * was known to be [encoding].
+   */
+  @JvmStatic
+  fun toEncoding(protoBytes: ByteArray, encoding: Encoding): ByteArray =
+    convert(protoBytes, Encoding.PROTOBUF, encoding)
 }

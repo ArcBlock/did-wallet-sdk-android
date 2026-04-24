@@ -1,5 +1,6 @@
 syntax = "proto3";
 package ocap;
+option java_package = "io.arcblock.tx_codec.generated";
 
 enum StatusCode {
   OK = 0;
