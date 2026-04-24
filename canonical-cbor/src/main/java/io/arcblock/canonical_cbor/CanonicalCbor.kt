@@ -53,8 +53,6 @@ object CanonicalCbor {
    */
   @JvmStatic
   fun parseCanonical(type: String, bytes: ByteArray): Map<String, Any?> {
-    throw NotImplementedError(
-      "Implementation pending — see Phase 1.6 in kotlin-port.md"
-    )
+    return Decoder.parseCanonical(type, bytes)
   }
 }

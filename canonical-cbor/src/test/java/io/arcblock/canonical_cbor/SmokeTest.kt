@@ -3,6 +3,7 @@ package io.arcblock.canonical_cbor
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -38,9 +39,17 @@ class SmokeTest {
   }
 
   @Test
-  fun `parseCanonical is a scaffold (throws until Phase 1_6)`() {
-    assertThrows(NotImplementedError::class.java) {
-      CanonicalCbor.parseCanonical("Transaction", byteArrayOf())
+  fun `parseCanonical rejects input without tag 55799 prefix`() {
+    val err = assertThrows(CanonicalCborException::class.java) {
+      CanonicalCbor.parseCanonical("Transaction", byteArrayOf(0xa0.toByte()))
     }
+    assertTrue(err.message!!.contains("self-describe tag 55799"))
+  }
+
+  @Test
+  fun `parseCanonical of empty tagged map returns empty fields`() {
+    val bytes = byteArrayOf(0xd9.toByte(), 0xd9.toByte(), 0xf7.toByte(), 0xa0.toByte())
+    val decoded = CanonicalCbor.parseCanonical("Transaction", bytes)
+    assertTrue(decoded.isEmpty())
   }
 }

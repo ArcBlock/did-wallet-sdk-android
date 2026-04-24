@@ -20,11 +20,25 @@ class GoldenVectorTest {
 
   private fun verify(name: String) {
     val fx = FixtureLoader.load(name)
+
+    // encode(input.json) == golden cbor.bin
     val actual = CanonicalCbor.canonicalBytes(fx.type, fx.data)
     assertArrayEquals(
       "$name: encoded bytes differ from golden vector",
       fx.cborBytes,
       actual
+    )
+
+    // decode(cbor.bin) followed by re-encode produces the same bytes. This
+    // catches decoder bugs that would silently mangle data (CBOR `Map` not
+    // converted, BigInt tag dropped, etc.) — anything the encoder can emit,
+    // the decoder must be able to read without loss.
+    val decoded = CanonicalCbor.parseCanonical(fx.type, fx.cborBytes)
+    val reEncoded = CanonicalCbor.canonicalBytes(fx.type, decoded)
+    assertArrayEquals(
+      "$name: round-trip encode(decode(bin)) differs from bin",
+      fx.cborBytes,
+      reEncoded
     )
   }
 
