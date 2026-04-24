@@ -1,0 +1,26 @@
+// Self-contained settings for the canonical-cbor module.
+//
+// Until the SDK root `build.gradle` is modernized (it still references the
+// obsolete `jcenter()` repository which has been offline since 2022), this
+// module builds as a standalone Gradle project.
+//
+// Build:   cd canonical-cbor && gradle build
+// Test:    cd canonical-cbor && gradle test
+//
+// When the root project is fixed, delete this file and uncomment the
+// `include ':canonical-cbor'` line in the root settings.gradle.
+
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    google()
+  }
+}
+dependencyResolutionManagement {
+  repositories {
+    mavenCentral()
+    google()
+  }
+}
+rootProject.name = 'canonical-cbor'
