@@ -34,7 +34,11 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 }
 
 dependencies {
-  // Phase 1.3 will add: api 'com.upokecenter:cbor:4.5.4'
+  // Canonical CBOR writer / reader. upokecenter/CBOR-Java is pure Java,
+  // supports arbitrary tags (needed for 55799 / 2 / 3), and preserves
+  // insertion order on CBORObject.NewMap() — critical for deterministic
+  // output since we sort map entries by proto field id before insertion.
+  api 'com.upokecenter:cbor:4.5.4'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
   // Schema JSON parser. org.json is ~75 KB, no transitive deps, API is
