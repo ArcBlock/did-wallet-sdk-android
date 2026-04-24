@@ -37,6 +37,11 @@ dependencies {
   // Phase 1.3 will add: api 'com.upokecenter:cbor:4.5.4'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
+  // Schema JSON parser. org.json is ~75 KB, no transitive deps, API is
+  // stable, matches Android's built-in org.json surface (so code stays
+  // source-compat with an eventual in-SDK integration).
+  implementation 'org.json:json:20240303'
+
   testImplementation 'junit:junit:4.13.2'
 }
 
