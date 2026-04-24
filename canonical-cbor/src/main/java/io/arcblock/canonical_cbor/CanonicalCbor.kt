@@ -1,13 +1,13 @@
 package io.arcblock.canonical_cbor
 
+import com.upokecenter.cbor.CBORObject
+import com.upokecenter.cbor.CBOREncodeOptions
+
 /**
  * Canonical CBOR Transaction encoder/decoder for OCAP.
  *
  * Port of `blockchain/core/message/src/canonical-cbor.ts`. Wire format spec is
  * documented in `planning/canonical-cbor/spec.md` next to this module.
- *
- * This file is a scaffold — actual implementations land in subsequent
- * commits (see kotlin-port.md §7 Implementation checklist).
  */
 object CanonicalCbor {
 
@@ -39,9 +39,9 @@ object CanonicalCbor {
    */
   @JvmStatic
   fun canonicalBytes(type: String, data: Map<String, Any?>): ByteArray {
-    throw NotImplementedError(
-      "Implementation pending — see Phase 1.3/1.4/1.5 in kotlin-port.md"
-    )
+    val body = Encoder.encodeMessageFields(type, data)
+    val tagged = CBORObject.FromObjectAndTag(body, TAG_SELF_DESCRIBE)
+    return tagged.EncodeToBytes()
   }
 
   /**

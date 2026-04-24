@@ -28,10 +28,13 @@ class SmokeTest {
   }
 
   @Test
-  fun `canonicalBytes is a scaffold (throws until Phase 1_3+)`() {
-    assertThrows(NotImplementedError::class.java) {
-      CanonicalCbor.canonicalBytes("Transaction", emptyMap())
-    }
+  fun `canonicalBytes of empty Transaction returns 4-byte tagged empty map`() {
+    val out = CanonicalCbor.canonicalBytes("Transaction", emptyMap())
+    // d9 d9 f7 a0 = tag 55799 + empty map
+    assertArrayEquals(
+      byteArrayOf(0xd9.toByte(), 0xd9.toByte(), 0xf7.toByte(), 0xa0.toByte()),
+      out
+    )
   }
 
   @Test
