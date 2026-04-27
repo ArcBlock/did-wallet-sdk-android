@@ -54,7 +54,24 @@ so the app team has them next to their tests.
 
 ## Status
 
-- Spec doc: first draft, matches `canonical-cbor.ts` as of blockchain
-  @ 1.30.9.
-- Kotlin implementation: not started. See `kotlin-port.md` §"Implementation
-  checklist" for the entry point.
+- ✅ Spec doc: matches `canonical-cbor.ts` as of blockchain @ 1.30.9.
+- ✅ Kotlin implementation: complete in `../canonical-cbor/` and a
+  reflection-based Transaction bridge in `../tx-codec/`. 72 + 31 tests
+  pass; 10 of those are byte-exact cross-encoder tests against
+  abt-wallet's TypeScript pipeline (see
+  `tx-codec/src/test/.../MetaCrossEncoderTest.kt`).
+- 🕐 Maven publish: pending. See `release-checklist.md`.
+- 🕐 arc-wallet-android consumer migration: 5 call sites already
+  updated on the `docs/cbor-android-port-plan` branch in that repo;
+  needs Maven artifacts + jcenter cleanup before it can be built.
+
+## Quick start (verify the build locally)
+
+```bash
+cd did-wallet-sdk-android/canonical-cbor && gradle test
+cd ../tx-codec && gradle test
+```
+
+Both should report `BUILD SUCCESSFUL`. The first run downloads
+`com.upokecenter:cbor:4.5.4` and `com.google.protobuf:protoc:3.25.3`,
+so it takes a couple of minutes. Subsequent runs are <1 min.
