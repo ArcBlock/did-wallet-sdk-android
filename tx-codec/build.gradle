@@ -42,6 +42,8 @@ dependencies {
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
   testImplementation 'junit:junit:4.13.2'
+  // Used by MetaCrossEncoderTest to read JS-generated meta.json fixtures.
+  testImplementation 'org.json:json:20240303'
 }
 
 protobuf {
