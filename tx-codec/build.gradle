@@ -34,7 +34,11 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 }
 
 dependencies {
-  api 'io.arcblock.did:sdk-canonical-cbor'
+  // Composite build (settings.gradle) substitutes this with the sibling
+  // canonical-cbor module at compile time. The explicit version here is
+  // what gets baked into the published POM so external consumers can
+  // resolve it after publishToMavenLocal / Sonatype publish.
+  api "io.arcblock.did:sdk-canonical-cbor:${version}"
   // Full protobuf-java (not lite) so FieldDescriptor reflection is
   // available on generated types. We use reflection to avoid writing a
   // switch for every itx typeUrl; the extra KB pays for itself quickly.
@@ -50,6 +54,14 @@ protobuf {
   protoc {
     artifact = 'com.google.protobuf:protoc:3.25.3'
   }
+}
+
+// Don't ship the raw .proto sources inside the published jar — only the
+// generated Java classes are needed at runtime, and bundling .proto files
+// duplicates entries from sdk-protobuf:1.0.19 (used by arc-wallet-android),
+// which fails Android's mergeJavaResource step.
+tasks.withType(Jar).configureEach {
+  exclude '**/*.proto'
 }
 
 test {

@@ -319,7 +319,7 @@ internal object Encoder {
    *
    * Mirrors canonical-cbor.ts line 215-229.
    */
-  private fun normalizeOpaquePayload(value: Any?): Any? {
+  internal fun normalizeOpaquePayload(value: Any?): Any? {
     return when (value) {
       null -> null
       is java.util.Date -> java.time.Instant.ofEpochMilli(value.time).toString()
@@ -343,7 +343,7 @@ internal object Encoder {
    * Convert an arbitrary JSON-like object tree into a CBORObject. Used only
    * for opaque Any payloads where the schema is unknown.
    */
-  private fun opaqueToCbor(value: Any?): CBORObject {
+  internal fun opaqueToCbor(value: Any?): CBORObject {
     return when (value) {
       null -> CBORObject.Null
       is CBORObject -> value

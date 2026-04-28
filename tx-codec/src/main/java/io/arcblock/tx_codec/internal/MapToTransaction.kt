@@ -6,6 +6,7 @@ import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.Message
+import io.arcblock.canonical_cbor.CanonicalCbor
 import io.arcblock.canonical_cbor.CanonicalCborException
 import io.arcblock.tx_codec.generated.Type.Transaction
 import java.math.BigInteger
@@ -175,6 +176,18 @@ internal object MapToTransaction {
       ?: throw CanonicalCborException(
         "tx-codec: Any field missing typeUrl"
       )
+    // Opaque payload (json / vc / fg:x:address): canonical-cbor stores
+    // the value as raw CBOR at Any key 1 — no schema-driven encoding. We
+    // serialize it back to raw CBOR bytes and stash in ProtoAny.value so
+    // the round-trip through protobuf preserves the payload byte-for-byte.
+    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(typeUrl)) {
+      val payload = data["value"]
+      val cborBytes = CanonicalCbor.encodeOpaque(payload)
+      return ProtoAny.newBuilder()
+        .setTypeUrl(typeUrl)
+        .setValue(ByteString.copyFrom(cborBytes))
+        .build()
+    }
     // Resolve inner message descriptor by stripping the typeUrl prefix.
     val innerName = typeUrlToMessageName(typeUrl)
     val innerDesc = DescriptorRegistry.lookup(innerName)

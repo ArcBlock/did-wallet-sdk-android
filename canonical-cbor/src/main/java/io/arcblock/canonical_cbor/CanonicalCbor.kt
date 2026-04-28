@@ -28,6 +28,11 @@ object CanonicalCbor {
   /** CBOR tag 55799 — self-describe (RFC 8949 §3.4.6). */
   const val TAG_SELF_DESCRIBE: Int = 55799
 
+  /** typeUrls whose payload is treated as opaque CBOR (no schema-driven
+   *  encoding). Mirror of the constant in canonical-cbor.ts. */
+  @JvmField
+  val OPAQUE_TYPE_URLS: Set<String> = setOf("json", "vc", "fg:x:address")
+
   /**
    * Encode [data] as canonical CBOR bytes for the given OCAP message [type].
    *
@@ -55,4 +60,22 @@ object CanonicalCbor {
   fun parseCanonical(type: String, bytes: ByteArray): Map<String, Any?> {
     return Decoder.parseCanonical(type, bytes)
   }
+
+  /**
+   * Encode an opaque payload (Any payload for json / vc / fg:x:address
+   * typeUrls) to raw CBOR bytes — no self-describe tag, no schema lookup.
+   * Used by tx-codec to round-trip opaque Any.value through protobuf
+   * without losing information.
+   */
+  @JvmStatic
+  fun encodeOpaque(value: Any?): ByteArray =
+    Encoder.opaqueToCbor(Encoder.normalizeOpaquePayload(value)).EncodeToBytes()
+
+  /**
+   * Decode raw CBOR [bytes] (produced by [encodeOpaque]) back to a plain
+   * Kotlin object tree.
+   */
+  @JvmStatic
+  fun decodeOpaque(bytes: ByteArray): Any? =
+    Decoder.cborObjectToPlainObject(CBORObject.DecodeFromBytes(bytes))
 }

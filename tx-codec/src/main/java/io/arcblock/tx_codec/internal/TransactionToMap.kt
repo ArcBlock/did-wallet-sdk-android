@@ -8,6 +8,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.Message
+import io.arcblock.canonical_cbor.CanonicalCbor
 import io.arcblock.canonical_cbor.CanonicalCborException
 import io.arcblock.tx_codec.generated.Type.Transaction
 
@@ -106,7 +107,12 @@ internal object TransactionToMap {
       FieldDescriptor.Type.MESSAGE, FieldDescriptor.Type.GROUP -> {
         val inner = value as Message
         if (field.messageType.fullName == "google.protobuf.Any") {
-          anyToMap(inner as ProtoAny)
+          // Reflection-based message traversal can hand us a DynamicMessage
+          // for Any fields (especially nested Any inside another DynamicMessage,
+          // or under protobuf-java runtimes that don't auto-resolve well-known
+          // types). Re-parse from wire bytes to land a concrete ProtoAny.
+          val any = if (inner is ProtoAny) inner else ProtoAny.parseFrom(inner.toByteArray())
+          anyToMap(any)
         } else {
           messageToMap(inner)
         }
@@ -141,6 +147,15 @@ internal object TransactionToMap {
     val bytes = any.value
     val out = LinkedHashMap<String, Any?>()
     out["typeUrl"] = typeUrl
+
+    // Opaque payload (json / vc / fg:x:address): the value bytes are raw
+    // CBOR (stashed by MapToTransaction.buildAny). Decode back to a plain
+    // Kotlin object so canonical-cbor's Encoder.encodeAnyValue picks it up
+    // unchanged via its own opaque branch.
+    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(typeUrl)) {
+      out["value"] = if (bytes.isEmpty) null else CanonicalCbor.decodeOpaque(bytes.toByteArray())
+      return out
+    }
 
     val innerName = typeUrlToMessageName(typeUrl)
     if (!DescriptorRegistry.contains(innerName)) {
