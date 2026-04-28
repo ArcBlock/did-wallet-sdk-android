@@ -190,6 +190,83 @@ class TxCodecTest {
     )
   }
 
+  /**
+   * Regression: protobuf-java returns the wire bits of a UINT64 field as
+   * a signed Long. A naive `value as Long` cast in TransactionToMap would
+   * emit values > Long.MAX_VALUE as a CBOR negative integer, drifting
+   * silently from the TS encoder which carries them as BigInt. Verify the
+   * round-trip preserves a value in the high range (2^63 + 1).
+   */
+  @Test
+  fun `UINT64 value above Long_MAX_VALUE round-trips as positive integer`() {
+    // Pick a target = 2^63 + 1 (smallest signed-overflow case).
+    val highUnsigned = "9223372036854775809" // 2^63 + 1
+    val tx = mapOf(
+      "from" to "z1WfGZHaLkv16upggvqBhPAT1UKZZvdKe1L",
+      "nonce" to java.math.BigInteger(highUnsigned),
+      "chainId" to "beta",
+      "pk" to hexToBytes(
+        "1f3da92f9443ad4c789310c88d42e68f5439b3d86187de5de8ec90100614dff1"
+      ),
+      "itx" to mapOf(
+        "typeUrl" to "fg:t:transfer_v2",
+        "to" to "z1djzQ7tYaSC2E183dxFMFScriZgvsrhQD1"
+      )
+    )
+    val cbor = io.arcblock.canonical_cbor.CanonicalCbor.canonicalBytes(
+      "Transaction", tx
+    )
+    val proto = TxCodec.toProtobuf(cbor)
+    val backToCbor = TxCodec.toEncoding(proto, Encoding.CBOR)
+    assertArrayEquals(
+      "UINT64 above Long.MAX_VALUE didn't round-trip as positive integer",
+      cbor, backToCbor
+    )
+    // Decode and re-read nonce to confirm sign is preserved.
+    val parsed = io.arcblock.canonical_cbor.CanonicalCbor
+      .parseCanonical("Transaction", backToCbor)
+    val nonce = parsed["nonce"]
+    val asString = when (nonce) {
+      is java.math.BigInteger -> nonce.toString()
+      is Long -> java.lang.Long.toUnsignedString(nonce)
+      else -> nonce.toString()
+    }
+    assertEquals("nonce should still be 2^63 + 1", highUnsigned, asString)
+  }
+
+  /**
+   * google.protobuf.Timestamp is a message type but canonical-cbor emits
+   * it as an ISO-8601 string. Without a Timestamp branch on the inverse
+   * path, any itx containing a Timestamp field (e.g. ExchangeTx
+   * `expired_at`) would crash at coerceField with "expected map".
+   *
+   * Tests the helper pair directly: ISO -> Timestamp -> ISO must be
+   * identity on the wire format both sides see.
+   */
+  @Test
+  fun `Timestamp helpers round-trip ISO-8601 strings`() {
+    val iso = "2023-11-14T22:13:20.123456789Z"
+    val msg = io.arcblock.tx_codec.internal.MapToTransaction.buildTimestamp(iso)
+    val ts = msg as com.google.protobuf.Timestamp
+    assertEquals(1_700_000_000L, ts.seconds)
+    assertEquals(123_456_789, ts.nanos)
+    val backToIso = io.arcblock.tx_codec.internal.TransactionToMap.timestampToIso(msg)
+    assertEquals("ISO must round-trip", iso, backToIso)
+  }
+
+  @Test
+  fun `Timestamp helper rejects malformed ISO strings`() {
+    val ex = org.junit.Assert.assertThrows(
+      io.arcblock.canonical_cbor.CanonicalCborException::class.java
+    ) {
+      io.arcblock.tx_codec.internal.MapToTransaction.buildTimestamp("not-an-iso")
+    }
+    org.junit.Assert.assertTrue(
+      "error message should mention Timestamp",
+      ex.message?.contains("Timestamp") == true
+    )
+  }
+
   // ---- helpers ---------------------------------------------------------
 
   private fun buildSampleTransferV2(): Transaction {

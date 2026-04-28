@@ -35,7 +35,8 @@ internal object Decoder {
   private val BIGINT_WRAPPER_TYPES = setOf("BigUint", "BigSint")
   private val TIMESTAMP_TYPES = setOf("google.protobuf.Timestamp", "Timestamp")
   private val ANY_TYPES = setOf("google.protobuf.Any", "Any")
-  private val OPAQUE_TYPE_URLS = setOf("json", "vc", "fg:x:address")
+  // Single source of truth: see CanonicalCbor.OPAQUE_TYPE_URLS — mirror
+  // here removed to avoid drift when entries are added/removed.
 
   /**
    * Top-level entry: decode canonical CBOR [bytes] as a message of the given
@@ -210,7 +211,7 @@ internal object Decoder {
     }
     val typeUrl = typeUrlEntry.AsString()
 
-    if (OPAQUE_TYPE_URLS.contains(typeUrl)) {
+    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(typeUrl)) {
       val payload = cborMap[CBORObject.FromObject(1)]
       return mapOf(
         "typeUrl" to typeUrl,

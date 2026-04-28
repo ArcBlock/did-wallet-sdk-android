@@ -23,7 +23,8 @@ internal object Encoder {
   private val TIMESTAMP_TYPES = setOf("google.protobuf.Timestamp", "Timestamp")
   private val ANY_TYPES = setOf("google.protobuf.Any", "Any")
 
-  private val OPAQUE_TYPE_URLS = setOf("json", "vc", "fg:x:address")
+  // Single source of truth: see CanonicalCbor.OPAQUE_TYPE_URLS — mirror
+  // here removed to avoid drift when entries are added/removed.
 
   /**
    * Encode a message of the given [type] from its [data] map. Output is a
@@ -265,9 +266,31 @@ internal object Encoder {
     val map = CBORObject.NewMap()
     map[CBORObject.FromObject(0)] = CBORObject.FromObject(desc.typeUrl)
 
-    if (OPAQUE_TYPE_URLS.contains(desc.typeUrl)) {
-      val payload = if (desc.wasUnwrapped) desc.inner else (value["value"] ?: desc.inner)
+    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(desc.typeUrl)) {
+      // Strict OPAQUE write: take the payload only from `value["value"]`
+      // (or the unwrapped inner). MapToTransaction.buildAny on the inverse
+      // side does the same — both producers must agree or round-trips
+      // diverge for inputs like `{typeUrl: "json", value: null}`.
+      val payload = if (desc.wasUnwrapped) desc.inner else value["value"]
       map[CBORObject.FromObject(1)] = opaqueToCbor(normalizeOpaquePayload(payload))
+      return map
+    }
+
+    // Unknown inner type sentinel: prefer the explicit `getFields(name)
+    // == null` check over catching a CanonicalCborException whose message
+    // string is part of internal phrasing. A message-string match would
+    // silently break this fallback any time the throw site is reworded.
+    val innerFields = FieldResolver.getFields(desc.messageName)
+    if (innerFields == null) {
+      // Pass through: when the consumer kept the original `value` bytes
+      // (Decoder did this for unknown-typeUrl on the inbound side), we
+      // round-trip them verbatim under key 1.
+      if (value.containsKey("value")) {
+        map[CBORObject.FromObject(1)] = opaqueToCbor(value["value"])
+        return map
+      }
+      // No `value` and no schema — emit just the typeUrl. Receiver gets
+      // an Any with empty payload, same as the protobuf default-fold.
       return map
     }
 
@@ -283,30 +306,16 @@ internal object Encoder {
       val cleaned = LinkedHashMap(rawInner)
       cleaned.remove("typeUrl")
       cleaned.remove("type_url")
-      if (cleaned["type"] is String) {
-        val innerFields = FieldResolver.getFields(desc.messageName)
-        if (innerFields == null || !innerFields.containsKey("type")) {
-          cleaned.remove("type")
-        }
+      if (cleaned["type"] is String && !innerFields.containsKey("type")) {
+        cleaned.remove("type")
       }
       cleaned
     }
 
-    try {
-      val encoded = encodeMessageFields(desc.messageName, innerObj)
-      for ((k, v) in encoded.entries) {
-        if (k.AsInt32() == 0) continue // never overwrite our typeUrl slot
-        map[k] = v
-      }
-    } catch (err: CanonicalCborException) {
-      if (err.message?.contains("unknown message type") == true) {
-        // Unknown inner type — fall back to passthrough of raw bytes under key 1
-        if (value.containsKey("value")) {
-          map[CBORObject.FromObject(1)] = opaqueToCbor(value["value"])
-          return map
-        }
-      }
-      throw err
+    val encoded = encodeMessageFields(desc.messageName, innerObj)
+    for ((k, v) in encoded.entries) {
+      if (k.AsInt32() == 0) continue // never overwrite our typeUrl slot
+      map[k] = v
     }
     return map
   }

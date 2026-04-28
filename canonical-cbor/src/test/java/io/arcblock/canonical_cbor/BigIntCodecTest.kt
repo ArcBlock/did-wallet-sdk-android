@@ -112,12 +112,14 @@ class BigIntCodecTest {
   }
 
   @Test
-  fun `BigUint negative BigInteger encodes as positive (minus stripped)`() {
-    // BigUint should not honor minus — matches TS behavior where negative
-    // input still returns Tagged{negative=false} for the BigUint kind
-    val repr = BigIntCodec.normalize(BigInteger("-42"), Kind.BIG_UINT) as BigIntRepr.Tagged
-    assertEquals(false, repr.negative)
-    assertArrayEquals(byteArrayOf(0x2a), repr.bytes)
+  fun `BigUint rejects negative BigInteger at the boundary`() {
+    // Strict policy: silently coercing a negative input into a positive
+    // BigUint (the previous behavior, mirrored from a too-permissive TS
+    // helper) hides data corruption from callers. Encoding now throws —
+    // see also `BigUint rejects negative scalar` below.
+    assertThrows(CanonicalCborException::class.java) {
+      BigIntCodec.normalize(BigInteger("-42"), Kind.BIG_UINT)
+    }
   }
 
   // ---- toCbor: tagged output -------------------------------------------
@@ -173,6 +175,49 @@ class BigIntCodecTest {
     assertThrows(CanonicalCborException::class.java) {
       BigIntCodec.normalize(mapOf("value" to 3.14), Kind.BIG_UINT)
     }
+  }
+
+  // ---- BigUint must reject negative input at the boundary --------------
+
+  /**
+   * Regression: a `{value, minus: true}` wrapper must not silently
+   * encode as a positive BigUint — that would corrupt user data with
+   * no error path. Same intent as the TS `normalizeBigIntWrapper`
+   * strictness for unsigned wrappers.
+   */
+  @Test
+  fun `BigUint wrapper rejects minus=true`() {
+    assertThrows(CanonicalCborException::class.java) {
+      BigIntCodec.normalize(
+        mapOf("value" to byteArrayOf(0x01), "minus" to true),
+        Kind.BIG_UINT
+      )
+    }
+  }
+
+  @Test
+  fun `BigUint rejects negative BigInteger`() {
+    assertThrows(CanonicalCborException::class.java) {
+      BigIntCodec.normalize(java.math.BigInteger.valueOf(-1), Kind.BIG_UINT)
+    }
+  }
+
+  @Test
+  fun `BigUint rejects negative scalar`() {
+    assertThrows(CanonicalCborException::class.java) {
+      BigIntCodec.normalize(-42L, Kind.BIG_UINT)
+    }
+  }
+
+  @Test
+  fun `BigSint still accepts minus=true`() {
+    val repr = BigIntCodec.normalize(
+      mapOf("value" to byteArrayOf(0x01), "minus" to true),
+      Kind.BIG_SINT
+    )
+    // Tagged with negative=true (i.e. CBOR tag 3 on emit).
+    org.junit.Assert.assertTrue("BigSint minus=true should produce a Tagged.negative=true repr",
+      repr is BigIntCodec.BigIntRepr.Tagged && repr.negative)
   }
 
   // ---- stripLeadingZeros -----------------------------------------------

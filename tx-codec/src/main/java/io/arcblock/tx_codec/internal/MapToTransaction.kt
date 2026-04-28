@@ -86,6 +86,14 @@ internal object MapToTransaction {
 
     return when (field.type) {
       FieldDescriptor.Type.MESSAGE, FieldDescriptor.Type.GROUP -> {
+        // google.protobuf.Timestamp is a message type but canonical-cbor
+        // serializes it as an ISO-8601 string (matching the TS encoder
+        // and the protobuf JSON spec). The Decoder hands us the raw
+        // string back without converting; rebuild the Timestamp message
+        // from it before falling into the generic message path.
+        if (field.messageType.fullName == "google.protobuf.Timestamp" && value is String) {
+          return buildTimestamp(value)
+        }
         val nested = value as? Map<*, *>
           ?: throw CanonicalCborException("tx-codec: expected map for ${field.name}")
         @Suppress("UNCHECKED_CAST")
@@ -155,6 +163,21 @@ internal object MapToTransaction {
         "tx-codec: cannot coerce ${value!!::class.java.simpleName} to bytes"
       )
     }
+  }
+
+  /** Convert ISO-8601 string back to a `google.protobuf.Timestamp` message.
+   *  Inverse of `Scalars.encodeTimestamp` (canonical-cbor side).
+   *  internal for unit-test access. */
+  internal fun buildTimestamp(iso: String): Message {
+    val instant = try {
+      java.time.Instant.parse(iso)
+    } catch (e: Exception) {
+      throw CanonicalCborException("tx-codec: invalid Timestamp string '$iso'", e)
+    }
+    return com.google.protobuf.Timestamp.newBuilder()
+      .setSeconds(instant.epochSecond)
+      .setNanos(instant.nano)
+      .build()
   }
 
   private fun coerceMessage(desc: Descriptor, data: Map<String, Any?>): Message {

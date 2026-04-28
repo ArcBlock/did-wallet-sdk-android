@@ -106,15 +106,20 @@ internal object TransactionToMap {
     return when (field.type) {
       FieldDescriptor.Type.MESSAGE, FieldDescriptor.Type.GROUP -> {
         val inner = value as Message
-        if (field.messageType.fullName == "google.protobuf.Any") {
-          // Reflection-based message traversal can hand us a DynamicMessage
-          // for Any fields (especially nested Any inside another DynamicMessage,
-          // or under protobuf-java runtimes that don't auto-resolve well-known
-          // types). Re-parse from wire bytes to land a concrete ProtoAny.
-          val any = if (inner is ProtoAny) inner else ProtoAny.parseFrom(inner.toByteArray())
-          anyToMap(any)
-        } else {
-          messageToMap(inner)
+        when (field.messageType.fullName) {
+          "google.protobuf.Any" -> {
+            // Reflection-based message traversal can hand us a DynamicMessage
+            // for Any fields (especially nested Any inside another DynamicMessage,
+            // or under protobuf-java runtimes that don't auto-resolve well-known
+            // types). Re-parse from wire bytes to land a concrete ProtoAny.
+            val any = if (inner is ProtoAny) inner else ProtoAny.parseFrom(inner.toByteArray())
+            anyToMap(any)
+          }
+          // canonical-cbor emits Timestamp as ISO-8601 string, not as a
+          // {seconds, nanos} sub-map. Mirror it here so any itx that
+          // contains a Timestamp field (e.g. `expiredAt`) round-trips.
+          "google.protobuf.Timestamp" -> timestampToIso(inner)
+          else -> messageToMap(inner)
         }
       }
       FieldDescriptor.Type.ENUM -> (value as EnumValueDescriptor).number
@@ -130,10 +135,31 @@ internal object TransactionToMap {
       FieldDescriptor.Type.FIXED32 -> value as Int
       FieldDescriptor.Type.INT64,
       FieldDescriptor.Type.SINT64,
-      FieldDescriptor.Type.SFIXED64,
+      FieldDescriptor.Type.SFIXED64 -> value as Long
+      // UINT64 / FIXED64: protobuf-java returns the wire bits as a signed
+      // Long. Values > Long.MAX_VALUE come out negative and would be
+      // emitted as a CBOR negative integer, drifting from the TS encoder
+      // which uses BigInt. Lift to BigInteger via the unsigned bit pattern
+      // so canonical-cbor emits a positive integer (or tagged bignum
+      // beyond 2^64 — caps out at the same code path).
       FieldDescriptor.Type.UINT64,
-      FieldDescriptor.Type.FIXED64 -> value as Long
+      FieldDescriptor.Type.FIXED64 -> {
+        val signed = value as Long
+        if (signed >= 0L) signed
+        else java.math.BigInteger(java.lang.Long.toUnsignedString(signed))
+      }
     }
+  }
+
+  /** Convert a `google.protobuf.Timestamp` message back to ISO-8601 (the
+   *  shape `Encoder.encodeFieldValue` expects for Timestamp fields).
+   *  Inverse of `MapToTransaction.buildTimestamp`.
+   *  internal for unit-test access. */
+  internal fun timestampToIso(msg: Message): String {
+    val desc = msg.descriptorForType
+    val seconds = (msg.getField(desc.findFieldByName("seconds")) as? Long) ?: 0L
+    val nanos = (msg.getField(desc.findFieldByName("nanos")) as? Int) ?: 0
+    return java.time.Instant.ofEpochSecond(seconds, nanos.toLong()).toString()
   }
 
   /**

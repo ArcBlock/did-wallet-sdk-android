@@ -58,6 +58,15 @@ internal object BigIntCodec {
     if (value is Map<*, *>) {
       val raw = value["value"] ?: return BigIntRepr.Omit
       val minus = value["minus"] == true
+      // Reject negative values into BigUint at the boundary instead of
+      // silently re-coercing them to positive (which would corrupt the
+      // user's data without an error). Mirrors the TS `normalizeBigIntWrapper`
+      // strictness for unsigned wrappers.
+      if (kind == Kind.BIG_UINT && minus) {
+        throw CanonicalCborException(
+          "canonical-cbor: BigUint cannot carry minus=true"
+        )
+      }
       val bytes: ByteArray = toMagnitudeBytes(raw) ?: return BigIntRepr.Omit
       val trimmed = stripLeadingZeros(bytes)
       if (trimmed.size == 1 && trimmed[0] == 0.toByte()) return BigIntRepr.Omit
@@ -68,6 +77,11 @@ internal object BigIntCodec {
     // BigInteger (native)
     if (value is BigInteger) {
       if (value.signum() == 0) return BigIntRepr.Omit
+      if (kind == Kind.BIG_UINT && value.signum() < 0) {
+        throw CanonicalCborException(
+          "canonical-cbor: BigUint cannot encode negative BigInteger"
+        )
+      }
       val negative = value.signum() < 0 && kind == Kind.BIG_SINT
       val magnitude = if (value.signum() < 0) value.negate() else value
       return BigIntRepr.Tagged(stripLeadingZeros(magnitude.toByteArray()), negative)
@@ -77,6 +91,11 @@ internal object BigIntCodec {
     if (value is Long || value is Int || value is Short || value is Byte) {
       val n = (value as Number).toLong()
       if (n == 0L) return BigIntRepr.Omit
+      if (kind == Kind.BIG_UINT && n < 0L) {
+        throw CanonicalCborException(
+          "canonical-cbor: BigUint cannot encode negative scalar"
+        )
+      }
       val magnitude = if (n < 0L) BigInteger.valueOf(n).negate() else BigInteger.valueOf(n)
       val negative = n < 0L && kind == Kind.BIG_SINT
       return BigIntRepr.Tagged(stripLeadingZeros(magnitude.toByteArray()), negative)
