@@ -36,6 +36,11 @@ internal object MapToTransaction {
   // ---------------------------------------------------------------------
 
   private fun populate(builder: Message.Builder, desc: Descriptor, data: Map<String, Any?>) {
+    // TODO: protobuf `oneof` groups are not handled. None of the
+    // current OCAP message types use oneof, but if one is introduced
+    // later, populating multiple fields of the same oneof here would
+    // silently drop all but the last. Add a `desc.oneofs` pre-check
+    // before that happens.
     for (field in desc.fields) {
       val value = readField(data, field) ?: continue
       setFieldValue(builder, field, value)
@@ -176,20 +181,33 @@ internal object MapToTransaction {
       ?: throw CanonicalCborException(
         "tx-codec: Any field missing typeUrl"
       )
-    // Opaque payload (json / vc / fg:x:address): canonical-cbor stores
-    // the value as raw CBOR at Any key 1 — no schema-driven encoding. We
-    // serialize it back to raw CBOR bytes and stash in ProtoAny.value so
-    // the round-trip through protobuf preserves the payload byte-for-byte.
-    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(typeUrl)) {
+    val innerName = typeUrlToMessageName(typeUrl)
+    // Three classes of typeUrl all use the same opaque-bytes carrier so
+    // round-trips stay byte-exact and forward-compatible:
+    //   1. Declared OPAQUE (json / vc / fg:x:address): canonical-cbor
+    //      writes the inner value as raw CBOR by spec.
+    //   2. Unknown typeUrl this build doesn't have a descriptor for —
+    //      packing as opaque bytes mirrors TransactionToMap.anyToMap on
+    //      the inverse side and lets a wallet running an older SDK
+    //      decode/encode an itx type added later by the dapp without
+    //      throwing.
+    // Decoder's unknown-type branch surfaces raw bytes via
+    // cborObjectToAny(payload) (yields ByteArray); OPAQUE branch hands
+    // back a Map/String/List from cborObjectToPlainObject. Honour both.
+    if (CanonicalCbor.OPAQUE_TYPE_URLS.contains(typeUrl) ||
+      !DescriptorRegistry.contains(innerName)
+    ) {
       val payload = data["value"]
-      val cborBytes = CanonicalCbor.encodeOpaque(payload)
+      val bytes = when (payload) {
+        null -> ByteArray(0)
+        is ByteArray -> payload
+        else -> CanonicalCbor.encodeOpaque(payload)
+      }
       return ProtoAny.newBuilder()
         .setTypeUrl(typeUrl)
-        .setValue(ByteString.copyFrom(cborBytes))
+        .setValue(ByteString.copyFrom(bytes))
         .build()
     }
-    // Resolve inner message descriptor by stripping the typeUrl prefix.
-    val innerName = typeUrlToMessageName(typeUrl)
     val innerDesc = DescriptorRegistry.lookup(innerName)
     // Strip wrapper keys before populating the inner message.
     val inner = LinkedHashMap(data)

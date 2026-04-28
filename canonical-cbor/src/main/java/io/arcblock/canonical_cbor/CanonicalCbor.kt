@@ -74,6 +74,17 @@ object CanonicalCbor {
   /**
    * Decode raw CBOR [bytes] (produced by [encodeOpaque]) back to a plain
    * Kotlin object tree.
+   *
+   * **Note on tagging**: the input must NOT carry the self-describe tag
+   * 55799 prefix (`0xd9 0xd9 0xf7`). [encodeOpaque] intentionally emits
+   * payload-only CBOR so the bytes can be embedded directly inside
+   * another CBOR structure (e.g. as a nested map value) without
+   * double-tagging. If you have a self-describe-tagged buffer use
+   * [parseCanonical] instead.
+   *
+   * **Untrusted input**: opaque payloads are dapp-controlled; downstream
+   * UI rendering should treat the returned tree as untrusted (no
+   * automatic markup execution, sane size limits, etc).
    */
   @JvmStatic
   fun decodeOpaque(bytes: ByteArray): Any? =

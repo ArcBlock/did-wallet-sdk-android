@@ -42,6 +42,16 @@ dependencies {
   // Full protobuf-java (not lite) so FieldDescriptor reflection is
   // available on generated types. We use reflection to avoid writing a
   // switch for every itx typeUrl; the extra KB pays for itself quickly.
+  //
+  // Coexistence with sdk-protobuf (javalite) on Android: tx-codec uses
+  // an isolated `option java_package = "io.arcblock.tx_codec.generated"`
+  // for its own generated classes (see src/main/proto/*.proto), so the
+  // two runtimes do NOT share class names — a consumer can keep
+  // sdk-protobuf:1.0.19 javalite for its app-side Transaction model and
+  // pull tx-codec's full-java reflection layer through this module
+  // without a `Duplicate class ocap.Type$Transaction` failure. Public
+  // API on TxCodec is bytes-first to avoid leaking the internal types
+  // across the module boundary.
   api 'com.google.protobuf:protobuf-java:3.25.3'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
@@ -56,11 +66,14 @@ protobuf {
   }
 }
 
-// Don't ship the raw .proto sources inside the published jar — only the
-// generated Java classes are needed at runtime, and bundling .proto files
-// duplicates entries from sdk-protobuf:1.0.19 (used by arc-wallet-android),
-// which fails Android's mergeJavaResource step.
-tasks.withType(Jar).configureEach {
+// Don't ship the raw .proto sources inside the published main jar — only
+// the generated Java classes are needed at runtime, and bundling .proto
+// files duplicates entries from sdk-protobuf:1.0.19 (used by
+// arc-wallet-android), which fails Android's mergeJavaResource step.
+//
+// Sources jar is left untouched on purpose: IDE-side schema lookups for
+// downstream consumers remain available.
+jar {
   exclude '**/*.proto'
 }
 

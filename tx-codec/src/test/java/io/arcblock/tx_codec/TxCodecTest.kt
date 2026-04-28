@@ -102,6 +102,94 @@ class TxCodecTest {
     assertEquals(innerBefore.value.value, innerAfter.value.value)
   }
 
+  // ---- OPAQUE Any payload (json/vc/fg:x:address) -----------------------
+
+  /**
+   * payment-kit subscriptions ship `itx.data` as
+   * `Any{typeUrl='json', value=<arbitrary CBOR map>}`. Confirms the
+   * wallet's CBOR → protobuf → CBOR round-trip preserves every byte;
+   * any drift here would silently break signature verification on the
+   * dapp side because SHA3(finalTx) wouldn't match.
+   */
+  @Test
+  fun `OPAQUE Any payload (typeUrl=json) survives full CBOR round-trip`() {
+    val tx = mapOf(
+      "from" to "z1WfGZHaLkv16upggvqBhPAT1UKZZvdKe1L",
+      "nonce" to 1_717_171_717_171L,
+      "chainId" to "beta",
+      "pk" to hexToBytes(
+        "1f3da92f9443ad4c789310c88d42e68f5439b3d86187de5de8ec90100614dff1"
+      ),
+      "itx" to mapOf(
+        "typeUrl" to "fg:t:delegate",
+        "address" to "z1DelegateAddressExample00000000000000",
+        "to" to "z1cRPzp7te3W9tTMLrKJs4ss5U3JQ1TmPs3",
+        "ops" to listOf(
+          mapOf(
+            "typeUrl" to "fg:t:transfer_v3",
+            "rules" to listOf("itx.to == \"z1djzQ7tYaSC2E183dxFMFScriZgvsrhQD1\"")
+          )
+        ),
+        "data" to mapOf(
+          "typeUrl" to "json",
+          "value" to mapOf(
+            // Order matters: canonical-cbor sorts map keys length-then-lex,
+            // so "limit" < "method" < "currency" by length, then
+            // "currency" < "method" lexicographically. Building in this
+            // order keeps the input intent obvious; the encoder will
+            // re-sort canonically regardless.
+            "limit" to 10_000L,
+            "method" to "card",
+            "currency" to "USD"
+          )
+        )
+      )
+    )
+    val cbor = io.arcblock.canonical_cbor.CanonicalCbor.canonicalBytes(
+      "Transaction", tx
+    )
+    val proto = TxCodec.toProtobuf(cbor)
+    val backToCbor = TxCodec.toEncoding(proto, Encoding.CBOR)
+    assertArrayEquals(
+      "OPAQUE Any payload (typeUrl='json') didn't round-trip byte-exact",
+      cbor, backToCbor
+    )
+  }
+
+  /**
+   * Forward-compatibility: an itx typeUrl this build doesn't recognise
+   * must NOT crash on encode. MapToTransaction.buildAny falls back to
+   * the same opaque-bytes carrier as TransactionToMap.anyToMap, so the
+   * round-trip survives intact even when the dapp ships a new itx type.
+   */
+  @Test
+  fun `unknown typeUrl falls back to opaque-bytes round-trip`() {
+    val tx = mapOf(
+      "from" to "z1WfGZHaLkv16upggvqBhPAT1UKZZvdKe1L",
+      "nonce" to 1_717_171_717_171L,
+      "chainId" to "beta",
+      "pk" to hexToBytes(
+        "1f3da92f9443ad4c789310c88d42e68f5439b3d86187de5de8ec90100614dff1"
+      ),
+      "itx" to mapOf(
+        // A typeUrl this SDK build has no descriptor for. The Decoder
+        // will preserve the inner CBOR bytes under "value"; buildAny
+        // must accept them without throwing.
+        "typeUrl" to "fg:t:hypothetical_future_op",
+        "value" to byteArrayOf(0x01, 0x02, 0x03, 0x04)
+      )
+    )
+    val cbor = io.arcblock.canonical_cbor.CanonicalCbor.canonicalBytes(
+      "Transaction", tx
+    )
+    val proto = TxCodec.toProtobuf(cbor)
+    val backToCbor = TxCodec.toEncoding(proto, Encoding.CBOR)
+    assertArrayEquals(
+      "Unknown typeUrl didn't round-trip byte-exact",
+      cbor, backToCbor
+    )
+  }
+
   // ---- helpers ---------------------------------------------------------
 
   private fun buildSampleTransferV2(): Transaction {
