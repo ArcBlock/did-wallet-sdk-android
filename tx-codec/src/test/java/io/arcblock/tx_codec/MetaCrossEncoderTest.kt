@@ -2,6 +2,7 @@ package io.arcblock.tx_codec
 
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
@@ -27,6 +28,18 @@ import org.junit.Test
  */
 class MetaCrossEncoderTest {
 
+  /** Fixtures whose JS-produced protobuf bytes preserve a zero-magnitude
+   *  `BigUint{value: bytes(0x00)}` wrapper inside `itx.value`. Canonical
+   *  CBOR folds default values, so a CBOR→PB→CBOR round-trip can't
+   *  recover those exact bytes. Forward direction (PB→CBOR equals
+   *  golden) still works and is asserted; reverse direction is skipped
+   *  with a TODO to either regenerate the fixture without the explicit
+   *  zero wrapper, or to switch the reverse assertion to a per-typeUrl
+   *  inner-message semantic compare. */
+  private val SKIP_REVERSE_BYTE_EQ: Set<String> = setOf(
+    "wallet_exchange_v2_multisig"
+  )
+
   private fun verify(name: String) {
     val metaText = javaClass.getResourceAsStream("/vectors/$name.meta.json")
       ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
@@ -50,6 +63,32 @@ class MetaCrossEncoderTest {
       "$name: Kotlin CBOR encoding of JS-side protobuf bytes differs from JS golden",
       cborGolden,
       cborFromKotlin
+    )
+
+    // Reverse direction: production wallet path is exactly this — the
+    // dapp ships CBOR, the wallet decodes to protobuf for the existing
+    // javalite signing code. Compare against the JS-produced protobuf
+    // bytes too so a Kotlin-only round-trip can't mask a decode-side
+    // disagreement (e.g. a UINT64 sign-extension bug only the JS encoder
+    // would have surfaced).
+    //
+    // Important asymmetry: JS protobuf encoders preserve explicit
+    // zero-magnitude BigUint wrappers (`{value: bytes(0x00)}`) on the
+    // wire, while canonical CBOR folds them per the proto3 default-
+    // folding rule. So byte-equality on the reverse path is unreachable
+    // for any fixture that carries a zero-magnitude wrapper. We use
+    // protobuf's semantic equality (Transaction.equals) instead — both
+    // sides parseFrom into proto3-canonicalised messages where folded
+    // and absent fields are equivalent.
+    if (name in SKIP_REVERSE_BYTE_EQ) return
+    val pbFromKotlin = TxCodec.toProtobuf(cborGolden)
+    val txFromJs = io.arcblock.tx_codec.generated.Type.Transaction
+      .parseFrom(protobufBytes)
+    val txFromKotlin = io.arcblock.tx_codec.generated.Type.Transaction
+      .parseFrom(pbFromKotlin)
+    assertEquals(
+      "$name: Kotlin protobuf decoding of JS-side CBOR bytes differs semantically from JS protobuf",
+      txFromJs, txFromKotlin
     )
   }
 
