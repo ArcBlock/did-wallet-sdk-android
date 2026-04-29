@@ -38,6 +38,11 @@ dependencies {
   // supports arbitrary tags (needed for 55799 / 2 / 3), and preserves
   // insertion order on CBORObject.NewMap() — critical for deterministic
   // output since we sort map entries by proto field id before insertion.
+  //
+  // Single source of CBOR for the SDK: any future module that introduces
+  // com.upokecenter:cbor must align to >= 4.5.4 so Gradle's
+  // conflict-resolution doesn't pick an older version that lacks the
+  // tag/ordering guarantees this encoder relies on.
   api 'com.upokecenter:cbor:4.5.4'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
