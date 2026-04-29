@@ -8,7 +8,12 @@
 plugins {
   id 'org.jetbrains.kotlin.jvm' version '1.9.22'
   id 'java-library'
-  id 'maven-publish'
+  // Sonatype Central Portal publishing. Replaces the legacy OSSRH
+  // (s01.oss.sonatype.org) flow, which was sunset 2025-06-30. Pulls in
+  // maven-publish + signing automatically, configures the Central
+  // Portal endpoint, and provides `publishAndReleaseToMavenCentral` for
+  // one-shot publish + auto-release.
+  id 'com.vanniktech.maven.publish' version '0.30.0'
 }
 
 group = 'io.arcblock.did'
@@ -17,8 +22,9 @@ version = rootProject.file('../version').text.trim()
 java {
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
-  withJavadocJar()
-  withSourcesJar()
+  // Sources / javadoc jars come from the vanniktech plugin (auto-attached
+  // to the publication). Don't add them here, otherwise Gradle errors
+  // with "multiple artifacts with the identical extension and classifier".
 }
 
 kotlin {
@@ -68,35 +74,56 @@ test {
   }
 }
 
-publishing {
-  publications {
-    maven(MavenPublication) {
-      groupId = 'io.arcblock.did'
-      artifactId = 'sdk-canonical-cbor'
-      from components.java
-      pom {
-        name = 'sdk-canonical-cbor'
-        description = 'Canonical CBOR Transaction encoder for OCAP wallets.'
-        url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
-        licenses {
-          license {
-            name = 'The Apache Software License, Version 2.0'
-            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-          }
-        }
-        developers {
-          developer {
-            id = 'ArcBlock'
-            name = 'ArcBlock'
-            email = 'app@arcblock.io'
-          }
-        }
-        scm {
-          connection = 'scm:git:git://github.com/ArcBlock/did-wallet-sdk-android.git'
-          developerConnection = 'scm:git:ssh://git@github.com/ArcBlock/did-wallet-sdk-android.git'
-          url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
-        }
+// Maven Central publishing via Sonatype Central Portal.
+//
+// Required ~/.gradle/gradle.properties on the publishing machine:
+//   mavenCentralUsername=<central-portal-user-token-name>
+//   mavenCentralPassword=<central-portal-user-token-secret>
+//   signing.gnupg.keyName=<last-8-hex-of-gpg-long-key-id>
+//   # signing.gnupg.passphrase optional — pinentry-mac prompts on first sign
+//
+// Workflow:
+//   gradle publishToMavenLocal             # smoke test, no signing required
+//   gradle publishAndReleaseToMavenCentral # upload + auto-release once Sonatype validates
+mavenPublishing {
+  publishToMavenCentral('CENTRAL_PORTAL', true)  // automaticRelease = true
+  signAllPublications()
+
+  coordinates('io.arcblock.did', 'sdk-canonical-cbor', project.version.toString())
+
+  pom {
+    name = 'sdk-canonical-cbor'
+    description = 'Canonical CBOR Transaction encoder for OCAP wallets.'
+    inceptionYear = '2025'
+    url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+    licenses {
+      license {
+        name = 'The Apache Software License, Version 2.0'
+        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+        distribution = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
       }
     }
+    developers {
+      developer {
+        id = 'ArcBlock'
+        name = 'ArcBlock'
+        email = 'app@arcblock.io'
+        url = 'https://github.com/ArcBlock'
+      }
+    }
+    scm {
+      connection = 'scm:git:git://github.com/ArcBlock/did-wallet-sdk-android.git'
+      developerConnection = 'scm:git:ssh://git@github.com/ArcBlock/did-wallet-sdk-android.git'
+      url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+    }
   }
+}
+
+// Use the local gpg CLI (with gpg-agent + pinentry-mac) for signing
+// instead of putting the private key in gradle.properties. Modern GnuPG
+// 2.5 stores secrets in keyboxd, not in secring.gpg, so the in-memory
+// signing key path requires extra plumbing; useGpgCmd() just shells out
+// to the same gpg binary the developer already uses.
+signing {
+  useGpgCmd()
 }

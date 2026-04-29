@@ -8,7 +8,9 @@ plugins {
   id 'org.jetbrains.kotlin.jvm' version '1.9.22'
   id 'java-library'
   id 'com.google.protobuf' version '0.9.4'
-  id 'maven-publish'
+  // Sonatype Central Portal publishing — see canonical-cbor/build.gradle
+  // for the rationale (legacy OSSRH sunset 2025-06-30).
+  id 'com.vanniktech.maven.publish' version '0.30.0'
 }
 
 group = 'io.arcblock.did'
@@ -17,8 +19,8 @@ version = rootProject.file('../version').text.trim()
 java {
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
-  withJavadocJar()
-  withSourcesJar()
+  // Sources / javadoc jars handled by the vanniktech plugin —
+  // see canonical-cbor/build.gradle.
 }
 
 kotlin {
@@ -85,23 +87,42 @@ test {
   }
 }
 
-publishing {
-  publications {
-    maven(MavenPublication) {
-      groupId = 'io.arcblock.did'
-      artifactId = 'sdk-tx-codec'
-      from components.java
-      pom {
-        name = 'sdk-tx-codec'
-        description = 'OCAP Transaction codec for wallets (dual encoding).'
-        url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
-        licenses {
-          license {
-            name = 'The Apache Software License, Version 2.0'
-            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-          }
-        }
+// Maven Central publishing via Sonatype Central Portal.
+// See canonical-cbor/build.gradle for the gradle.properties contract.
+mavenPublishing {
+  publishToMavenCentral('CENTRAL_PORTAL', true)
+  signAllPublications()
+
+  coordinates('io.arcblock.did', 'sdk-tx-codec', project.version.toString())
+
+  pom {
+    name = 'sdk-tx-codec'
+    description = 'OCAP Transaction codec for wallets (dual encoding).'
+    inceptionYear = '2025'
+    url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+    licenses {
+      license {
+        name = 'The Apache Software License, Version 2.0'
+        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+        distribution = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
       }
     }
+    developers {
+      developer {
+        id = 'ArcBlock'
+        name = 'ArcBlock'
+        email = 'app@arcblock.io'
+        url = 'https://github.com/ArcBlock'
+      }
+    }
+    scm {
+      connection = 'scm:git:git://github.com/ArcBlock/did-wallet-sdk-android.git'
+      developerConnection = 'scm:git:ssh://git@github.com/ArcBlock/did-wallet-sdk-android.git'
+      url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+    }
   }
+}
+
+signing {
+  useGpgCmd()
 }
