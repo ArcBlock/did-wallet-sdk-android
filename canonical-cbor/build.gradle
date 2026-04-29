@@ -41,12 +41,18 @@ dependencies {
   api 'com.upokecenter:cbor:4.5.4'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
-  // Schema JSON parser. org.json is ~75 KB, no transitive deps, API is
-  // stable, matches Android's built-in org.json surface (so code stays
-  // source-compat with an eventual in-SDK integration).
-  implementation 'org.json:json:20240303'
+  // Schema JSON parser. org.json is the same API Android ships in the
+  // platform classes, so we want consumers to use *their* runtime copy
+  // rather than bundling the upstream artifact a second time:
+  //   - Android consumers: framework-provided org.json wins at runtime,
+  //     no extra 75 KB on disk, no shadowing surprise.
+  //   - Pure-JVM consumers: must declare their own org.json (or any
+  //     compatible implementation) on the runtime classpath.
+  // Tests run on the JVM so they need an explicit testImplementation.
+  compileOnly 'org.json:json:20240303'
 
   testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20240303'
 }
 
 test {
