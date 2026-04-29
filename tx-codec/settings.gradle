@@ -1,0 +1,33 @@
+// Self-contained settings for the tx-codec module.
+//
+// See canonical-cbor/settings.gradle for why this module is built
+// standalone (SDK root `build.gradle` references the obsolete jcenter()
+// repository, offline since 2022).
+//
+// Build:   cd tx-codec && gradle build
+// Test:    cd tx-codec && gradle test
+
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    google()
+  }
+}
+dependencyResolutionManagement {
+  repositories {
+    mavenCentral()
+    google()
+    mavenLocal()
+  }
+}
+rootProject.name = 'tx-codec'
+
+// Consume the sibling canonical-cbor module as a composite build so we
+// always compile against the local source tree rather than a stale
+// published artifact.
+includeBuild('../canonical-cbor') {
+  dependencySubstitution {
+    substitute module('io.arcblock.did:sdk-canonical-cbor') using project(':')
+  }
+}

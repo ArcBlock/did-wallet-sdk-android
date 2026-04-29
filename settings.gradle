@@ -21,3 +21,8 @@ rootProject.name = "did-wallet-sdk-android"
 include ':app'
 include ':wallet-sdk'
 include ':protobuf'
+// TODO: include ':canonical-cbor' once SDK root build.gradle replaces
+// the obsolete jcenter() repository (offline since 2022). Until then,
+// canonical-cbor/ is a self-contained subproject with its own
+// settings.gradle — build it via:
+//   cd canonical-cbor && gradle build

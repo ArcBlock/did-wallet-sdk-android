@@ -1,0 +1,102 @@
+// Canonical CBOR Transaction encoder/decoder for OCAP.
+//
+// Pure-JVM module (no Android SDK needed). Currently self-contained due to
+// the root project's stale jcenter() reference — see settings.gradle.
+//
+// See ../planning/canonical-cbor/kotlin-port.md for the implementation guide.
+
+plugins {
+  id 'org.jetbrains.kotlin.jvm' version '1.9.22'
+  id 'java-library'
+  id 'maven-publish'
+}
+
+group = 'io.arcblock.did'
+version = rootProject.file('../version').text.trim()
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_1_8
+  targetCompatibility = JavaVersion.VERSION_1_8
+  withJavadocJar()
+  withSourcesJar()
+}
+
+kotlin {
+  jvmToolchain(17)
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  kotlinOptions {
+    jvmTarget = '1.8'
+    apiVersion = '1.8'
+    languageVersion = '1.8'
+  }
+}
+
+dependencies {
+  // Canonical CBOR writer / reader. upokecenter/CBOR-Java is pure Java,
+  // supports arbitrary tags (needed for 55799 / 2 / 3), and preserves
+  // insertion order on CBORObject.NewMap() — critical for deterministic
+  // output since we sort map entries by proto field id before insertion.
+  //
+  // Single source of CBOR for the SDK: any future module that introduces
+  // com.upokecenter:cbor must align to >= 4.5.4 so Gradle's
+  // conflict-resolution doesn't pick an older version that lacks the
+  // tag/ordering guarantees this encoder relies on.
+  api 'com.upokecenter:cbor:4.5.4'
+  implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+
+  // Schema JSON parser. org.json is the same API Android ships in the
+  // platform classes, so we want consumers to use *their* runtime copy
+  // rather than bundling the upstream artifact a second time:
+  //   - Android consumers: framework-provided org.json wins at runtime,
+  //     no extra 75 KB on disk, no shadowing surprise.
+  //   - Pure-JVM consumers: must declare their own org.json (or any
+  //     compatible implementation) on the runtime classpath.
+  // Tests run on the JVM so they need an explicit testImplementation.
+  compileOnly 'org.json:json:20240303'
+
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20240303'
+}
+
+test {
+  useJUnit()
+  testLogging {
+    events 'passed', 'skipped', 'failed'
+    exceptionFormat 'full'
+  }
+}
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+      groupId = 'io.arcblock.did'
+      artifactId = 'sdk-canonical-cbor'
+      from components.java
+      pom {
+        name = 'sdk-canonical-cbor'
+        description = 'Canonical CBOR Transaction encoder for OCAP wallets.'
+        url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+        licenses {
+          license {
+            name = 'The Apache Software License, Version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+        developers {
+          developer {
+            id = 'ArcBlock'
+            name = 'ArcBlock'
+            email = 'app@arcblock.io'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/ArcBlock/did-wallet-sdk-android.git'
+          developerConnection = 'scm:git:ssh://git@github.com/ArcBlock/did-wallet-sdk-android.git'
+          url = 'https://github.com/ArcBlock/did-wallet-sdk-android'
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,542 @@
+syntax = "proto3";
+package ocap;
+option java_package = "io.arcblock.tx_codec.generated";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "vendor.proto";
+import "enum.proto";
+
+// basic type definition
+
+message BigUint { bytes value = 1; }
+message BigSint {
+  bytes value = 1;
+  bool minus = 2;
+}
+
+message TokenSymbol {
+  string address = 1;
+  string symbol = 2;
+  int32 decimal = 3;
+  string unit = 4;
+}
+
+message TokenInfo {
+  string address = 1;
+  string symbol = 2;
+  int32 decimal = 3;
+  string unit = 4;
+  string name = 5;
+  string description = 6;
+  string icon = 7;
+  string max_total_supply = 8;
+  google.protobuf.Any metadata = 9;
+  string website = 10;
+  repeated string spenders = 11;
+  repeated string minters = 12;
+  string type = 13;
+}
+
+message WalletType {
+  KeyType pk = 1;
+  HashType hash = 2;
+  EncodingType address = 3;
+  RoleType role = 4;
+}
+
+message WalletInfo {
+  WalletType type = 1 [ deprecated = true ];
+  bytes sk = 2;
+  bytes pk = 3;
+  string address = 4;
+}
+
+message ChainInfo {
+  string id = 1;                // node id.
+  string network = 2;           // which network the node belongs to.
+  string moniker = 3;           // name of the node.
+  string consensus_version = 4; // consensus engine version for this node.
+  bool synced = 5;              // indicate if this node is fully synced.
+  bytes app_hash = 6;           // current application hash.
+  bytes block_hash = 7;         // current block hash.
+  string block_height = 8;      // latest block height, in integer.
+  google.protobuf.Timestamp block_time = 9; // latest block time.
+  string address = 10;                      // the address of the node.
+  string voting_power = 11; // the voting power of the node, in integer.
+  string total_txs = 12;    // total number of txs up to the latest block
+  string version = 13;      // current forge version
+  //  string data_version = 14;  current data version deprecated
+  map<string, string> forge_apps_version = 15;
+  repeated string supported_txs = 16;
+}
+
+message NodeInfo {
+  string id = 1;                // node id.
+  string network = 2;           // which network the node belongs to.
+  string moniker = 3;           // name of the node.
+  string consensus_version = 4; // consensus engine version for this node.
+  bool synced = 5;              // indicate if this node is fully synced.
+  bytes app_hash = 6;           // current application hash.
+  bytes block_hash = 7;         // current block hash.
+  string block_height = 8;      // latest block height, in integer.
+  google.protobuf.Timestamp block_time = 9; // latest block time.
+  string address = 10;                      // the address of the node.
+  string voting_power = 11; // the voting power of the node, in integer.
+  string total_txs = 12;    // total number of txs up to the latest block
+  string version = 13;      // current forge version
+  // string data_version = 14;  current data version deprecated
+  map<string, string> forge_apps_version = 15;
+  repeated string supported_txs = 16;
+  string ip = 17;          // self node ip
+  GeoInfo geo_info = 18;   // self node geo info
+  string p2p_address = 19; // id@ip:port
+}
+
+message Validator {
+  string address = 1;
+  // setting power to 0 will remove existing address from validator
+  string power = 2;
+}
+
+message ConsensusParams {
+  string max_bytes = 1;
+  string max_gas = 2;
+  // we keep max_validators + max_candidates items in validator list, and only
+  // use max_validators items for the validators.
+  uint32 max_validators = 3;
+  uint32 max_candidates = 4;
+  repeated string pub_key_types = 5;
+  repeated Validator validators = 6;
+  bool validator_changed = 7;
+  bool param_changed = 8;
+}
+
+// a deferred task (need more consideration)
+message UpgradeTask {
+  UpgradeType type = 1;
+  string data_hash = 2;               // data shall be first put into IPFS
+  repeated UpgradeAction actions = 4; // actions
+}
+
+message UpgradeTasks { repeated UpgradeTask item = 1; }
+
+message Multisig {
+  // signer address
+  string signer = 1;
+  // public key for signer
+  bytes pk = 2;
+  // signature
+  bytes signature = 3;
+  // delegator
+  string delegator = 4;
+
+  // extra data
+  google.protobuf.Any data = 15;
+}
+
+message Transaction {
+  string from = 1;
+
+  // Used for anti-replay
+  uint64 nonce = 2;
+
+  // use DID for the chain. "did:" prefix is omitted
+  string chain_id = 3;
+  // public key of the sender
+  bytes pk = 4;
+  // gas required for this tx
+  uint32 gas = 5;
+  // delegator
+  string delegator = 6;
+
+  // signature of the transaction
+  // tx.from 应该最后签名，并且把签名放在 tx.signature 上面，不论 tx.itx.inputs 是否为空
+  bytes signature = 13;
+
+  // v1.11.0 版本的一些变化
+  // The order of tx.signatures does not matter since we encode messages using protobuf
+  // Any owner in tx.itx.inputs should sign the tx and put their signature in tx.signatures
+  // Any owner in tx.itx.inputs should sign the tx without tx.signature and tx.signatures[n].signature
+  // If tx.from exist in tx.itx.inputs as an asset owner, his signature must also exist
+  repeated Multisig signatures = 14;
+
+  // itx may contain the inputs property to indicate that this is an multiple input tx
+  google.protobuf.Any itx = 15;
+
+  repeated TransactionReceipt receipts = 16;
+
+  // service fee for this tx
+  string service_fee = 17;
+}
+
+message TransactionInfo {
+  Transaction tx = 1;
+  string height = 2;
+  uint32 index = 3;
+  string hash = 4;
+  repeated vendor.KVPair tags = 5;
+  StatusCode code = 6;
+  google.protobuf.Timestamp time = 7;
+  repeated TransactionReceipt receipts = 8;
+
+  // added on v1.10.5 to indicate accounts with net asset gain/lose
+  string sender = 9;
+  string receiver = 10;
+
+  repeated TokenSymbol token_symbols = 22;
+}
+
+message TransactionReceipt {
+  string address = 1;
+  repeated ReceiptChange changes = 2;
+}
+
+message ReceiptChange {
+  string target = 1;
+  string action = 2;
+  string value = 3;
+}
+
+// How do we define tx.itx.inputs
+message TokenInput {
+  string address = 1;
+  string value = 2;
+}
+message TransactionInput {
+  string owner = 1;
+  repeated TokenInput tokens = 2;
+  repeated string assets = 3;
+}
+
+message VariableInput {
+  string name = 1;
+  string value = 2;
+  string description = 3;
+  bool required = 4;
+}
+
+message DelegateConfig {
+  // the interval used for calculate the num_txs_delta / num_tokens_delta
+  uint32 delta_interval = 1;
+  // a list of type_urls that are allowed for delegation
+  repeated string type_urls = 2;
+}
+
+message VaultConfig {
+  string slashed_stake = 1;
+  string tx_fee = 2;
+  repeated string tx_gas = 3;
+}
+
+message TxFeeConfig {
+  string type_url = 1;
+  string fee = 2;
+}
+
+message TxGasConfig {
+  uint64 price = 1;
+  uint64 create_state = 2;
+  uint64 update_state = 3;
+  uint64 data_storage = 4;
+  string min_stake = 5;
+  string max_stake = 6;
+  uint64 stake_lock_period = 7;
+}
+
+message TxStakeConfig {
+  uint64 create_token = 1;
+  uint64 create_token_lock_period = 2;
+}
+
+message TransactionConfig {
+  uint32 max_asset_size = 1;
+  uint32 max_list_size = 2;
+  uint32 max_multisig = 3;
+  DelegateConfig delegate = 4;
+  repeated TxFeeConfig tx_fee = 5;
+  TxGasConfig tx_gas = 6;
+  TxStakeConfig tx_stake = 7;
+}
+
+message BlockInfo {
+  string height = 1;
+  uint32 num_txs = 2;
+  google.protobuf.Timestamp time = 3;
+  bytes app_hash = 4;
+  bytes proposer = 5;
+  repeated TransactionInfo txs = 6;
+  string total_txs = 7;
+  repeated TransactionInfo invalid_txs = 8;
+  repeated string txs_hashes = 9;
+  repeated string invalid_txs_hashes = 10;
+  bytes consensus_hash = 11;
+  bytes data_hash = 12;
+  bytes evidence_hash = 13;
+  bytes last_commit_hash = 14;
+  bytes last_results_hash = 15;
+  bytes next_validators_hash = 16;
+  bytes validators_hash = 17;
+  vendor.Version version = 18;
+  vendor.BlockID last_block_id = 19;
+}
+
+message BlockInfoSimple {
+  string height = 1;
+  uint32 num_txs = 2;
+  google.protobuf.Timestamp time = 3;
+  bytes app_hash = 4;
+  bytes proposer = 5;
+  string total_txs = 6;
+  repeated string txs_hashes = 7;
+  repeated string invalid_txs_hashes = 8;
+  bytes consensus_hash = 9;
+  bytes data_hash = 10;
+  bytes evidence_hash = 11;
+  bytes last_commit_hash = 12;
+  bytes last_results_hash = 13;
+  bytes next_validators_hash = 14;
+  bytes validators_hash = 15;
+  vendor.Version version = 16;
+  vendor.BlockID last_block_id = 17;
+}
+
+message StateContext {
+  string genesis_tx = 1;
+  string renaissance_tx = 2;
+  google.protobuf.Timestamp genesis_time = 3;
+  google.protobuf.Timestamp renaissance_time = 4;
+}
+
+message StakeSummary {
+  BigUint total_stakes = 1;
+  BigUint total_unstakes = 2;
+  StateContext context = 3;
+}
+
+message UnconfirmedTxs {
+  uint32 n_txs = 1;
+  repeated Transaction txs = 2;
+}
+
+message NetInfo {
+  bool listening = 1;
+  repeated string listeners = 2;
+  uint32 n_peers = 3;
+  repeated PeerInfo peers = 4;
+}
+
+message GeoInfo {
+  string city = 1;
+  string country = 2;
+  float latitude = 3;
+  float longitude = 4;
+}
+
+message PeerInfo {
+  string id = 1;
+  string network = 2;
+  string consensus_version = 3;
+  string moniker = 4;
+  string ip = 5;
+  GeoInfo geo_info = 6;
+}
+
+message ValidatorsInfo {
+  string block_height = 1;
+  repeated ValidatorInfo validators = 2;
+}
+
+message ValidatorInfo {
+  string address = 1;
+  vendor.PubKey pub_key = 2;
+  string voting_power = 3;
+  string proposer_priority = 4;
+  string name = 5;
+  GeoInfo geo_info = 6; // validator geo info
+}
+
+message ForgeToken {
+  string name = 1;           // token name
+  string symbol = 2;         // token symbol
+  string unit = 3;           // token smallest unit
+  string description = 4;    // token description
+  bytes icon = 5;            // token icon file in bytes
+  uint32 decimal = 6;        // token decimal
+  string initial_supply = 7; // token initial supply amount
+  string total_supply = 8;   // token total supply amount
+  uint32 inflation_rate = 9; // token inflation rate in integer
+  string address = 10;
+}
+
+message UpgradeInfo {
+  string height = 1;
+  string version = 2;
+}
+
+message WithdrawItem {
+  string hash = 1;
+  BigUint value = 2;
+}
+
+message AccountConfig {
+  string address = 1;
+  bytes pk = 2;
+  BigUint balance = 3;
+}
+
+message Evidence {
+  string hash = 1;       // tx hash from a foreign chain
+}
+
+// @link https://github.com/ArcBlock/blockchain/issues/112#issuecomment-814487646
+message NFTEndpoint {
+  // the url of the endpoint, must be a permanent url
+  string id = 1;
+
+  // for private endpoints, client must request with owner signature
+  string scope = 2;
+}
+
+message NFTDisplay {
+  // Can be svg|url|svg_gzipped|uri
+  string type = 1;
+
+  // Varies according to the type
+  // For svg type, content should be the svg itsself
+  // For url type, content should be the url to fetch the display content
+  string content = 2;
+}
+
+message NFTIssuer {
+  string id = 1;
+  string pk = 2;
+  string name = 3;
+}
+
+message AssetFactoryHook {
+  string name = 1; // can be mint/postMint
+  string type = 2; // can be callback/contract
+  string hook = 3;
+}
+
+message IndexedTokenInput {
+  string address = 1;
+  string value = 2;
+  int32 decimal = 3;
+  string unit = 4;
+  string symbol = 5;
+}
+
+// 和 AssetFactoryInput 数据结构类似，可以参考其注释
+message IndexedFactoryInput {
+  string value = 1;
+  repeated IndexedTokenInput tokens = 2;
+  repeated string assets = 3;
+  repeated VariableInput variables = 4;
+}
+
+message RollupValidator {
+  string pk = 1;
+  string address = 2;
+  string endpoint = 3;
+}
+
+message RollupSignature {
+  string signer = 1;
+  string signature = 2;
+}
+
+message ForeignToken {
+  string type = 1; // can be erc20, brc20, erc721
+  string contract_address = 2;
+  string chain_type = 3; // can be ethereum, bsc, fantom, matic
+  string chain_name = 4; // can be rinkeby, main, test
+  int32 chain_id = 5; // can be 1, 4
+}
+
+message RevokedStake {
+  repeated TokenInput tokens = 1;
+  repeated string assets = 2;
+}
+
+message ForgeStats {
+  repeated string num_blocks = 1;
+  repeated string num_txs = 2;
+  repeated BigUint num_stakes = 3;
+  repeated uint32 num_validators = 4;
+  repeated string num_account_migrate_txs = 5;
+  repeated string num_create_asset_txs = 6;
+  repeated uint32 num_consensus_upgrade_txs = 7;
+  repeated string num_declare_txs = 8;
+  repeated string num_declare_file_txs = 9;
+  repeated string num_exchange_txs = 10;
+  repeated string num_stake_txs = 11;
+  repeated uint32 num_sys_upgrade_txs = 12;
+  repeated string num_transfer_txs = 13;
+  repeated string num_update_asset_txs = 14;
+  repeated string num_consume_asset_txs = 15;
+  repeated uint32 tps = 16;
+  uint32 max_tps = 17;       // maximum tps in given time range
+  uint32 avg_tps = 18;       // average tps in given time range
+  float avg_block_time = 19; // average blocks in given time range
+}
+
+message GasEstimate {
+  string max = 1; // max gas for this tx
+}
+
+message RateLimit {
+  uint64 interval = 1; // interval in seconds
+  uint64 anchor = 3; // when to start the rate limit, default to current timestamp, can be future or past
+}
+message TokenLimit {
+  string address = 1; // which token allowed to transfer
+  repeated string to = 2; // which address allowed to transfer to, empty is unlimited
+  uint32 tx_count = 3; // how many txs allowed to send, 0 is unlimited
+  string tx_allowance = 4; // how much token allowed to transfer, 0 is unlimited
+  string total_allowance = 5; // how much token allowed to transfer, accumulated, 0 is unlimited
+  uint64 valid_until = 6; // in seconds, empty for unlimited
+  RateLimit rate = 7; // limit frequency, empty for unlimited
+
+  // stats fields maintained by chain
+  uint32 tx_sent = 8; // how much tx allowed to send, accumulated, 0 is unlimited
+  string spent_allowance = 9; // how much token allowed to transfer, 0 is unlimited
+  uint64 last_tx = 10; // last tx time
+
+  // fields used for display purpose
+  uint32 decimal = 11;
+  string symbol = 12;
+}
+message AssetLimit {
+  repeated string address = 1; // which asset allowed to transfer, empty is unlimited
+  repeated string to = 2; // which address allowed to transfer to, empty is unlimited
+  uint32 tx_count = 3; // how many txs allowed to send, 0 is unlimited
+  uint64 valid_until = 4; // in seconds, empty for unlimited
+  RateLimit rate = 5; // limit frequency, empty for unlimited
+
+  uint32 tx_sent = 6; // how much tx allowed to send, accumulated, 0 is unlimited
+  uint64 last_tx = 7; // last tx time
+}
+message DelegateLimit {
+  repeated TokenLimit tokens = 1;
+  repeated AssetLimit assets = 2;
+}
+
+
+// --------------------- Token Factory Related -------------------------------------
+
+message CurveConfig {
+  string type = 1; // "linear", "constant", "quadratic"
+
+  string base_price = 2;
+
+  // linear
+  string slope = 3;
+
+  // constant
+  string fixed_price = 4;
+
+  // quadratic
+  uint32 constant = 5;
+}
