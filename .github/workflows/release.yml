@@ -35,14 +35,26 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Build library with gradle
-        env:
-          AWS_S3_ACCESSKEY: ${{ secrets.AWS_S3_ACCESSKEY }}
-          AWS_S3_SECRETKEY: ${{ secrets.AWS_S3_SECRETKEY }}
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      # Auto-publish from CI is currently disabled. Both halves of
+      # `make maven` would fail on a fresh ubuntu-latest runner:
+      #   - `make maven-legacy` uploads to https://s01.oss.sonatype.org,
+      #     which Sonatype sunset on 2025-06-30.
+      #   - `make maven-cbor` uses the vanniktech plugin's
+      #     `publishAndReleaseToMavenCentral` task, which needs a GPG
+      #     private key and Central Portal user token — neither is wired
+      #     up in CI yet.
+      #
+      # Releases are produced from a maintainer's workstation; see
+      # planning/canonical-cbor/release-checklist.md for the manual
+      # flow. To re-enable CI auto-publish, the next maintainer needs:
+      #   - secrets.MAVEN_CENTRAL_USERNAME / MAVEN_CENTRAL_PASSWORD
+      #   - secrets.SIGNING_GPG_KEY (armored private key) + passphrase
+      #   - a GPG import step (crazy-max/ghaction-import-gpg@v6 or similar)
+      #   - protobuf / wallet-sdk migrated off the legacy OSSRH URL, or
+      #     `make maven` rewritten to skip them
+      - name: Skip auto-publish (manual flow)
         run: |
-          make maven
+          echo "::notice::Auto-publish disabled — release artifacts are pushed manually from a maintainer workstation. See planning/canonical-cbor/release-checklist.md."
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
