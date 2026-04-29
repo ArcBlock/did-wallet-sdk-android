@@ -68,10 +68,22 @@ maven-legacy:
 # system `gradle` binary (CI installs Gradle 9.x via setup-gradle@v3),
 # not the root wrapper (Gradle 7.2). When the root build is modernised
 # these can fold back into `maven-legacy`.
+#
+# Uses the vanniktech maven-publish plugin's
+# `publishAndReleaseToMavenCentral` task: uploads the staging deployment
+# to the Sonatype Central Portal and (because publishToMavenCentral is
+# called with automaticRelease=true in build.gradle) auto-releases it
+# once Central's validation passes — no manual "Close → Release" click
+# in the Portal UI required.
+#
+# Requires `~/.gradle/gradle.properties`:
+#   mavenCentralUsername=<central-portal-user-token-name>
+#   mavenCentralPassword=<central-portal-user-token-secret>
+#   signing.gnupg.keyName=<last-8-hex-of-publisher-gpg-long-key-id>
 maven-cbor:
-	@echo "uploading canonical-cbor + tx-codec to maven (standalone subprojects)"
-	@cd canonical-cbor && gradle clean publish
-	@cd tx-codec && gradle clean publish
+	@echo "uploading canonical-cbor + tx-codec to Sonatype Central Portal"
+	@cd canonical-cbor && gradle clean publishAndReleaseToMavenCentral --no-configuration-cache
+	@cd tx-codec && gradle clean publishAndReleaseToMavenCentral --no-configuration-cache
 
 
 mavenLocal: mavenLocal-legacy mavenLocal-cbor
