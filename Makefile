@@ -52,20 +52,39 @@ watch:
 run:
 	@echo "Running the software..."
 
-maven:
-	@echo "uploading to maven"
+maven: maven-legacy maven-cbor
+
+maven-legacy:
+	@echo "uploading sdk-protobuf + wallet-sdk to maven"
 	@./gradlew clean assemble
 	@./gradlew :sdk-protobuf:javadoc
 	@./gradlew :sdk-protobuf:sourceSets
 	@./gradlew :sdk-protobuf:publishAllPublicationsToMavenRepository
 	@./gradlew :wallet-sdk:publish
 
+# canonical-cbor and tx-codec are standalone Gradle projects (their own
+# settings.gradle, modern plugins block) because the root build still
+# references the shut-down jcenter() repo. They're published with the
+# system `gradle` binary (CI installs Gradle 9.x via setup-gradle@v3),
+# not the root wrapper (Gradle 7.2). When the root build is modernised
+# these can fold back into `maven-legacy`.
+maven-cbor:
+	@echo "uploading canonical-cbor + tx-codec to maven (standalone subprojects)"
+	@cd canonical-cbor && gradle clean publish
+	@cd tx-codec && gradle clean publish
 
 
-mavenLocal:
-	@echo "uploading to maven"
+mavenLocal: mavenLocal-legacy mavenLocal-cbor
+
+mavenLocal-legacy:
+	@echo "uploading sdk-protobuf + wallet-sdk to mavenLocal"
 	@./gradlew clean assemble
 	@./gradlew publishToMavenLocal
+
+mavenLocal-cbor:
+	@echo "uploading canonical-cbor + tx-codec to mavenLocal (standalone)"
+	@cd canonical-cbor && gradle clean publishToMavenLocal
+	@cd tx-codec && gradle clean publishToMavenLocal
 
 
 include .makefiles/*.mk
