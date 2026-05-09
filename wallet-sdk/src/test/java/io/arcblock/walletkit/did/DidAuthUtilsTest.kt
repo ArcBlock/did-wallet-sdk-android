@@ -1,11 +1,14 @@
 package io.arcblock.walletkit.did
 
+import com.google.common.io.BaseEncoding
 import io.arcblock.walletkit.bean.AppInfo
+import io.arcblock.walletkit.bean.IClaim
 import io.arcblock.walletkit.bean.MetaInfo
 import io.arcblock.walletkit.bean.ProfileClaim
 import io.arcblock.walletkit.bean.WalletInfo
 import io.arcblock.walletkit.utils.decodeB64
 import io.arcblock.walletkit.utils.encodeB58
+import org.junit.Assert
 import org.junit.Test
 
 /**
@@ -22,6 +25,51 @@ import org.junit.Test
  * Description  :
  */
 class DidAuthUtilsTest {
+
+  private val signingSk =
+    "dxX9ASBY+BTNayyTnIRC4A8QadAFi3F+GuE3+It8ltcM0h56H8xeJqTHn2w03uEfKJ801fjmeaygaIt0rHBaNg==".decodeB64()
+
+  private val otherSk = BaseEncoding.base16()
+    .decode("91F9EEA50EBCE155E6F1BAB1EB9C6D74AF3DB1D2C20A951F790E9AA28285DEF28270BBEABBB608361CBD3610A8220B66CBC8D5F82B7DDA6EB3F880D9FB2460EC")
+
+  @Test
+  fun verifyJWTDIDReturnsTrueWhenIssuerMatchesPublicKey() {
+    val wallet = WalletInfo(signingSk)
+    val token = createTestDidAuthToken(wallet)
+
+    val body = DidAuthUtils.parseJWT(token)
+
+    Assert.assertTrue(body.verifyJWTDID(token, wallet.pk))
+  }
+
+  @Test
+  fun verifyJWTDIDReturnsFalseWhenSignatureKeyDoesNotMatchIssuer() {
+    val signingWallet = WalletInfo(signingSk)
+    val issuerWallet = WalletInfo(otherSk)
+    val token = createTestDidAuthToken(
+      WalletInfo(issuerWallet.address, signingWallet.pk).let {
+        it.sk = signingSk
+        it
+      }
+    )
+
+    val body = DidAuthUtils.parseJWT(token)
+
+    Assert.assertFalse(body.verifyJWTDID(token, signingWallet.pk))
+  }
+
+  private fun createTestDidAuthToken(wallet: WalletInfo): String {
+    return DidAuthUtils.createDidAuthToken(
+      emptyArray<IClaim>(),
+      AppInfo().let {
+        it.name = "DID Auth Test"
+        it
+      },
+      "",
+      1700000000000L,
+      wallet
+    )
+  }
 
 
   @Test
