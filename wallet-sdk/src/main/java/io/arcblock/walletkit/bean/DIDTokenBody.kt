@@ -2,9 +2,9 @@ package io.arcblock.walletkit.bean
 
 import io.arcblock.walletkit.did.DidAuthUtils
 import io.arcblock.walletkit.did.DidType
-import io.arcblock.walletkit.did.DidUtils
 import io.arcblock.walletkit.did.IdGenerator
 import io.arcblock.walletkit.utils.Base58Btc
+import io.arcblock.walletkit.utils.address
 
 class DIDTokenBody(
   var action: String,
@@ -29,9 +29,9 @@ class DIDTokenBody(
    * check pk is matched with iss and signature is correct
    */
   fun verifyJWTDID(token: String, pk: ByteArray): Boolean {
-    return (IdGenerator.pk2did(
-      pk, DidType.getDidTypeByAddress(iss)
-    ) != iss) && DidAuthUtils.verifyJWTSig(token, pk, DidUtils.decodeSignTypeByPk(pk).name)
+    val didType = DidType.getDidTypeByAddress(iss)
+    return (IdGenerator.pk2did(pk, didType) == iss.address()) &&
+      DidAuthUtils.verifyJWTSig(token, pk, didType.keyType.name)
   }
 
   /**
